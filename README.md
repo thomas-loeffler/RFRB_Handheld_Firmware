@@ -4,7 +4,6 @@
 
 This is the repository for the handheld deployment on Trine's Robotic Football Team's running back
 
-## Pre-Requisites
 
 ### Sub-sub-heading
 
@@ -13,7 +12,7 @@ this is a copy-able code box
 ```
 
 this is a photo
-![wiring](documents/images/wiring.png)
+![wiring](documents/images/setup.png)
 
 
 
