@@ -90,7 +90,6 @@ void main(void){
 			
 			//stdio_display_ds4_outputs(&controller_state); // print the controller outputs over usb
 
-			//stdio_display_ds4_outputs(&controller_state); // print the controller outputs over usb
 			ds4_input_process(&controller_state, &ds4_state); // put the data into a struct for use elsewhere
 			
 			update_ds4_input_display(&ds4_state); // send the outputs to the display
