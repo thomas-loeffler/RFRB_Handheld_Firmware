@@ -88,7 +88,7 @@ void main(void){
 
 			bt_hid_get_latest(&controller_state); // Aquire latest Bluetooth controller state
 			
-			stdio_display_ds4_outputs(&controller_state); // print the controller outputs over usb
+			//stdio_display_ds4_outputs(&controller_state); // print the controller outputs over usb
 
 			//stdio_display_ds4_outputs(&controller_state); // print the controller outputs over usb
 			ds4_input_process(&controller_state, &ds4_state); // put the data into a struct for use elsewhere
