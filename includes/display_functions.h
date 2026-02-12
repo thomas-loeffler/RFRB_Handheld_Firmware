@@ -1,5 +1,6 @@
 
 #include <stdint.h>
+#include "bt_hid.h" // so the header knows what type struct bt_hid_state is
 
 extern struct ds4 ds4_state;
 
@@ -27,7 +28,7 @@ void display_all_fonts(void);
 
 void ds4_inputs_display_setup(void);
 
-void update_ds4_input_display(struct ds4* ds4_state);
+void display_inputs(struct bt_hid_state* ds4_state);
 
 
 

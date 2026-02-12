@@ -7,16 +7,14 @@
 // Standard includes / hardware headers
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
+#include <stdio.h>
+#include <string.h>
 
 // File includes
 #include "display_functions.h"
 #include "display_font.h"
-#include "ds4_struct.h"
+#include "peripheral_setup.h"
 
-#include <stdio.h>
-#include <string.h>
-
-extern struct ds4 ds4_state;
 
 //////////////////////////////////////
 //	           FUNCTIONS            //
@@ -319,24 +317,14 @@ void ds4_inputs_display_setup(void){
     send_small_char('R', 77, 2);
     send_small_char('2', 84, 2);
 
-
-
-
-
-
     send_small_char('B', 0, 5);
-    send_small_char('T', 7, 5);
-    send_small_char('N', 14, 5);
-    send_small_char('S', 21, 5);
-    send_small_char('1', 28, 5);
-    send_small_char(':', 35, 5);
-
-    send_small_char('B', 0, 6);
-    send_small_char('T', 7, 6);
-    send_small_char('N', 14, 6);
-    send_small_char('S', 21, 6);
-    send_small_char('2', 28, 6);
-    send_small_char(':', 35, 6);
+    send_small_char('U', 7, 5);
+    send_small_char('T', 14, 5);
+    send_small_char('T', 21, 5);
+    send_small_char('O', 28, 5);
+    send_small_char('N', 35, 5);
+    send_small_char('S', 42, 5);
+    send_small_char(':', 49, 5);
 
     send_small_char('D', 0, 7);
     send_small_char('P', 7, 7);
@@ -348,97 +336,256 @@ void ds4_inputs_display_setup(void){
 
 
 
-void update_ds4_input_display(struct ds4* ds4_state){
-    uint8_t LjoyX_prev;
-    uint8_t LjoyY_prev;
-    uint8_t RjoyX_prev;
-    uint8_t RjoyY_prev;
+void display_inputs(struct bt_hid_state* ds4_state){
+    // Variables for storing previous state, preventing unnecessary updates to the display
+    uint8_t LX_prev;
+    uint8_t LY_prev;
+    uint8_t RX_prev;
+    uint8_t RY_prev;
     uint8_t L2_prev;
     uint8_t R2_prev;
-    uint8_t buttons1_prev;
-    uint8_t buttons2_prev;
-    uint8_t dpad_prev;
+    uint16_t buttons_prev;
+    uint8_t PAD_prev;
 
-    if (ds4_state->l_joy_x != LjoyX_prev){
-        LjoyX_prev = ds4_state->l_joy_x;
-        // Update LjoyX
-        send_small_char((ds4_state->l_joy_x / 100), 42, 0); // Hundreds
-        send_small_char(((ds4_state->l_joy_x / 10) % 10), 49, 0); // Tens
-        send_small_char((ds4_state->l_joy_x % 10), 56, 0); // Ones
+    bool DIP1_prev;
+    bool DIP2_prev;
+    bool DIP3_prev;
+    bool DIP4_prev;
+
+    // Values for storing the current DIP switch state
+    bool dip_1;
+    bool dip_2;
+    bool dip_3;
+    bool dip_4;
+
+
+
+    ////////////////////////////////////////////////
+    //         UPDATING DIP SWITCH VALUES         //
+    ////////////////////////////////////////////////
+    
+    dip_1 = gpio_get(DIP1);
+    dip_2 = gpio_get(DIP2);
+    dip_3 = gpio_get(DIP3);
+    dip_4 = gpio_get(DIP4);
+        
+    if (dip_1 != DIP1_prev){
+        send_small_char(dip_1, 120, 4);
+        DIP1_prev = dip_1;
+    }
+
+    if(dip_2 != DIP2_prev){
+        send_small_char(dip_2, 120, 5);
+        DIP2_prev = dip_2;
+    }
+
+    if(dip_3 != DIP3_prev){
+        send_small_char(dip_3, 120, 6);
+        DIP3_prev = dip_3;
+    }
+
+    if(dip_4 != DIP4_prev){
+        send_small_char(dip_4, 120, 7);
+        DIP4_prev = dip_4;
+    }
+
+
+    
+    ////////////////////////////////////////////////
+    //        UPDATING DS4 JOYSTICK VALUES        //
+    ////////////////////////////////////////////////
+
+    if (ds4_state->lx != LX_prev){
+        // Update lx on screen
+        send_small_char((ds4_state->lx / 100), 42, 0); // Hundreds
+        send_small_char(((ds4_state->lx / 10) % 10), 49, 0); // Tens
+        send_small_char((ds4_state->lx % 10), 56, 0); // Ones
+        // Update previous value
+        LX_prev = ds4_state->lx;
     }
     
-    if (ds4_state->l_joy_y != LjoyY_prev){
-        LjoyY_prev = ds4_state->l_joy_y;
-        // Update LjoyY
-        send_small_char((ds4_state->l_joy_y / 100), 42, 1); // Hundreds
-        send_small_char(((ds4_state->l_joy_y / 10) % 10), 49, 1); // Tens
-        send_small_char((ds4_state->l_joy_y % 10), 56, 1); // Ones
+    if (ds4_state->ly != LY_prev){
+        // Update ly on screen
+        send_small_char((ds4_state->ly / 100), 42, 0); // Hundreds
+        send_small_char(((ds4_state->ly / 10) % 10), 49, 0); // Tens
+        send_small_char((ds4_state->ly % 10), 56, 0); // Ones
+        // Update previous value
+        LY_prev = ds4_state->ly;
     }
 
-    if (ds4_state->r_joy_x != RjoyX_prev){
-        RjoyX_prev = ds4_state->r_joy_x;
-        // Update RjoyX
-        send_small_char((ds4_state->r_joy_x / 100), 42, 2); // Hundreds
-        send_small_char(((ds4_state->r_joy_x / 10) % 10), 49, 2); // Tens
-        send_small_char((ds4_state->r_joy_x % 10), 56, 2); // Ones
+    if (ds4_state->rx != RX_prev){
+        // Update rx on screen
+        send_small_char((ds4_state->rx / 100), 42, 0); // Hundreds
+        send_small_char(((ds4_state->rx / 10) % 10), 49, 0); // Tens
+        send_small_char((ds4_state->rx % 10), 56, 0); // Ones
+        // Update previous value
+        RX_prev = ds4_state->rx;
     }
 
-    if (ds4_state->r_joy_y != RjoyY_prev){
-        RjoyY_prev = ds4_state->r_joy_y;
-        // Update RjoyY
-        send_small_char((ds4_state->r_joy_y / 100), 42, 3); // Hundreds
-        send_small_char(((ds4_state->r_joy_y / 10) % 10), 49, 3); // Tens
-        send_small_char((ds4_state->r_joy_y % 10), 56, 3); // Ones
+    if (ds4_state->ry != RY_prev){
+        // Update ry on screen on screen
+        send_small_char((ds4_state->ry / 100), 42, 0); // Hundreds
+        send_small_char(((ds4_state->ry / 10) % 10), 49, 0); // Tens
+        send_small_char((ds4_state->ry % 10), 56, 0); // Ones
+        // Update previous value
+        RY_prev = ds4_state->ry;
     }
 
-    if (ds4_state->l_trig != L2_prev){
-        L2_prev = ds4_state->l_trig;
-        // Update Left trigger
-        send_small_char((ds4_state->l_trig / 100), 98, 0); // Hundreds
-        send_small_char(((ds4_state->l_trig / 10) % 10), 105, 0); // Tens
-        send_small_char((ds4_state->l_trig % 10), 112, 0); // Ones
+
+    ////////////////////////////////////////////////
+    //        UPDATING DS4 TRIGGER VALUES         //
+    ////////////////////////////////////////////////
+
+    if (ds4_state->l2 != L2_prev){
+        // Update left trigger on screen
+        send_small_char((ds4_state->l2 / 100), 98, 0); // Hundreds
+        send_small_char(((ds4_state->l2 / 10) % 10), 105, 0); // Tens
+        send_small_char((ds4_state->l2 % 10), 112, 0); // Ones
+        // Update previous value
+        L2_prev = ds4_state->l2;
     }
 
     
-    if (ds4_state->r_trig != R2_prev){
-        R2_prev = ds4_state->r_trig;
-        // Update Right trigger
-        send_small_char((ds4_state->r_trig / 100), 98, 2); // Hundreds
-        send_small_char(((ds4_state->r_trig / 10) % 10), 105, 2); // Tens
-        send_small_char((ds4_state->r_trig % 10), 112, 2); // Ones
+    if (ds4_state->r2 != R2_prev){
+        // Update right trigger on screen
+        send_small_char((ds4_state->r2 / 100), 98, 0); // Hundreds
+        send_small_char(((ds4_state->r2 / 10) % 10), 105, 0); // Tens
+        send_small_char((ds4_state->r2 % 10), 112, 0); // Ones
+        // Update previous value
+        R2_prev = ds4_state->r2;
     }
 
-    if (ds4_state->buttons1 != buttons1_prev){
-        buttons1_prev = ds4_state->buttons1;
-        // Update Buttons
-        send_small_char((ds4_state->buttons1 & 0x01), 42, 5);
-        send_small_char((ds4_state->buttons1 & 0x02) >> 1, 49, 5);
-        send_small_char((ds4_state->buttons1 & 0x04) >> 2, 56, 5);
-        send_small_char((ds4_state->buttons1 & 0x08) >> 3, 63, 5);
-        send_small_char((ds4_state->buttons1 & 0x10) >> 4, 70, 5);
-        send_small_char((ds4_state->buttons1 & 0x20) >> 5, 77, 5);
-        send_small_char((ds4_state->buttons1 & 0x40) >> 6, 84, 5);
-        send_small_char((ds4_state->buttons1 & 0x80) >> 7, 91, 5);
+
+    ////////////////////////////////////////////////
+    //   UPDATING DS4 INDIVIDUAL BUTTON VALUES    //
+    ////////////////////////////////////////////////
+
+    // Button mapping
+    //      Bit 15:
+    //      Bit 14: 
+    //      Bit 13: 
+    //      Bit 12: 
+    //      Bit 11: 
+    //      Bit 10: 
+    //      Bit 9: 
+    //      Bit 8: 
+    //      Bit 7:
+    //      Bit 6:
+    //      Bit 5:
+    //      Bit 4:
+    //      Bit 3:
+    //      Bit 2:
+    //      Bit 1:
+    //      Bit 0:
+
+    // MSB -> LSB 
+    if (ds4_state->buttons && 0x8000 != (buttons_prev & 0x8000)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x8000), 0, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x4000 != (buttons_prev & 0x4000)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x4000), 7, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x2000 != (buttons_prev & 0x2000)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x2000), 14, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x1000 != (buttons_prev & 0x1000)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x1000), 21, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0800 != (buttons_prev & 0x0800)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0800), 28, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0400 != (buttons_prev & 0x0400)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0400), 35, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0200 != (buttons_prev & 0x0200)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0300), 42, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0100 != (buttons_prev & 0x0100)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0100), 49, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0080 != (buttons_prev & 0x0080)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0080), 56, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0040 != (buttons_prev & 0x0040)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0040), 63, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0020 != (buttons_prev & 0x0020)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0020), 70, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0010 != (buttons_prev & 0x0010)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0010), 77, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0008 != (buttons_prev & 0x0008)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0008), 84, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0004 != (buttons_prev & 0x0004)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0004), 91, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0002 != (buttons_prev & 0x0002)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0002), 98, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
+    }
+    if( ds4_state->buttons && 0x0001 != (buttons_prev & 0x0001)){
+        // Update ?? button status on screen
+        send_small_char((ds4_state->buttons & 0x0001), 105, 6);
+        // Update previous value
+        buttons_prev = ds4_state->buttons;
     }
 
-    if (ds4_state->buttons2 != buttons2_prev){
-        buttons2_prev = ds4_state->buttons2;
-        // Update Buttons
-        send_small_char((ds4_state->buttons2 & 0x01), 42, 6);
-        send_small_char((ds4_state->buttons2 & 0x02) >> 1, 49, 6);
-        send_small_char((ds4_state->buttons2 & 0x04) >> 2, 56, 6);
-        send_small_char((ds4_state->buttons2 & 0x08) >> 3, 63, 6);
-        send_small_char((ds4_state->buttons2 & 0x10) >> 4, 70, 6);
-        send_small_char((ds4_state->buttons2 & 0x20) >> 5, 77, 6);
-        send_small_char((ds4_state->buttons2 & 0x40) >> 6, 84, 6);
-        send_small_char((ds4_state->buttons2 & 0x80) >> 7, 91, 6);
-    }
 
-    if (ds4_state->dpad != dpad_prev){
-        dpad_prev = ds4_state->dpad;
-
-        // Update Connection Status
-        send_small_char(ds4_state->dpad, 35, 7);
+    ////////////////////////////////////////////////
+    //          UPDATING DS4 DPAD VALUE           //
+    ////////////////////////////////////////////////
+    
+    if (ds4_state->pad != PAD_prev){
+        // Update DPAD value on screen
+        send_small_char(ds4_state->pad, 35, 7);
+        // Update previous value
+        PAD_prev = ds4_state->pad;
     }
 
 }

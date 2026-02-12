@@ -7,16 +7,14 @@
 
 
 void GPIO_setup(void) {
-    // gpio_init initializes the specified GPIO pin to GPIO function
-    // gpio_set_dir sets the pin to be as an input or output (data direction)
-    // gpio_put sets the pin to high or low
     
+    // Initialize the simple cycle pin as an output and set high to start
     gpio_init(SC_PIN);
     gpio_set_dir(SC_PIN, GPIO_OUT);
     gpio_put(SC_PIN, 1);  
 
 
-
+    // Initialize the DIP switch pins as inputs with pull-up resistors
     gpio_init(DIP1);
     gpio_init(DIP2);
     gpio_init(DIP3);

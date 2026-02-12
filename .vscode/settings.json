@@ -2,5 +2,6 @@
   "cmake.configureEnvironment": {
     "PICO_SDK_PATH": "${workspaceFolder}/pico-sdk",
     "PICO_TOOLCHAIN_PATH": "/Applications/ArmGNUToolchain/15.2.rel1/arm-none-eabi/bin"
-  }
+  },
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
