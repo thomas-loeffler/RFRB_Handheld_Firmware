@@ -23,7 +23,6 @@ add_executable(main_app
     source/peripheral_setup.c
     source/display_functions.c
     source/display_font.c
-    source/ds4_struct.c
 )
 
 pico_enable_stdio_usb(main_app 1)
@@ -35,9 +34,7 @@ target_include_directories(main_app PRIVATE
 )
 
 # Add pico_stdlib library which aggregates commonly used features
-target_link_libraries(main_app
-    hardware_pwm
-    hardware_gpio    
+target_link_libraries(main_app    
     pico_stdlib
     pico_cyw43_arch_none
     pico_btstack_classic
@@ -45,6 +42,8 @@ target_link_libraries(main_app
     pico_btstack_cyw43
     pico_multicore
     hardware_i2c
+    hardware_spi
+    hardware_gpio
 )
 
 # create map/bin/hex/uf2 file in addition to ELF.
