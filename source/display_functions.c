@@ -1,5 +1,4 @@
 
-
 //////////////////////////////////////
 //             INCLUDES             //
 //////////////////////////////////////
@@ -13,12 +12,11 @@
 // User defined headers
 #include "display_functions.h"
 #include "display_font.h"
-#include "peripheral_setup.h"
 
 
 
 //////////////////////////////////////
-//	           FUNCTIONS            //
+//       FUNCTION DEFINITIONS       //
 //////////////////////////////////////
 
 // Bonus function in here for now

@@ -3,13 +3,17 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/Users/thomas.loeffler/pico/gcc-arm-none-eabi/arm-gnu-toolchain-15.2.rel1-darwin-arm64-arm-none-eabi/lib/gcc/arm-none-eabi/15.2.1/include",
+                "/Users/thomas.loeffler/pico/gcc-arm-none-eabi/arm-gnu-toolchain-15.2.rel1-darwin-arm64-arm-none-eabi/arm-none-eabi/include",
+                "${workspaceFolder}/pico-sdk/**" 
+
             ],
             "defines": [],
             "compilerPath": "/opt/homebrew/bin/arm-none-eabi-gcc-15.2.1",
             "cStandard": "c17",
             "cppStandard": "c++14",
-            "intelliSenseMode": "macos-clang-arm64",
+            "intelliSenseMode": "gcc-arm",
             "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],

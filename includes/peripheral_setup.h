@@ -14,6 +14,18 @@
 void GPIO_setup(void);
 void i2c_setup(void);
 void spi_setup(void);
+void radio_irq_setup(void);
+void radio_irq_handler(uint gpio, uint32_t events);
+
+
+
+
+//////////////////////////////////////
+//            VARIABLES             //
+//////////////////////////////////////
+
+extern volatile bool radio_event;
+
 
 
 

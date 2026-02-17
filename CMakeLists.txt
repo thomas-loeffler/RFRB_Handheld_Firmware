@@ -23,6 +23,7 @@ add_executable(main_app
     source/peripheral_setup.c
     source/display_functions.c
     source/display_font.c
+    source/radio_functions.c
 )
 
 pico_enable_stdio_usb(main_app 1)

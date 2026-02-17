@@ -1,13 +1,32 @@
 
-#include "pico/stdlib.h"
+//////////////////////////////////////
+//             INCLUDES             //
+//////////////////////////////////////
 
+// Standard includes / hardware headers
+#include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 
+// User defined headers
 #include "peripheral_setup.h"
 
 
+
+//////////////////////////////////////
+//             VARIABLES            //
+//////////////////////////////////////
+
+volatile bool radio_event = false;
+
+
+
+
+
+//////////////////////////////////////
+//       FUNCTION DEFINITIONS       //
+//////////////////////////////////////
 
 void GPIO_setup(void) {
     
@@ -32,9 +51,9 @@ void GPIO_setup(void) {
     gpio_pull_up(DIP2);
     gpio_pull_up(DIP3);
     gpio_pull_up(DIP4);
-
-
 }
+
+
 
 
 
@@ -51,6 +70,10 @@ void i2c_setup(void){
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SCL);
 }
+
+
+
+
 
 
 void spi_setup(void){
@@ -72,8 +95,34 @@ void spi_setup(void){
     gpio_init(SPI_CS); // GP17 / physical pin 22
     gpio_set_dir(SPI_CS, GPIO_OUT);
     gpio_put(SPI_CS, 1); // deselect device
+}
+
+
+
+
+
+
+void radio_irq_setup(void) {
+
+    gpio_init(RADIO_IRQ); // GP21 / physical pin 27
+    gpio_set_dir(RADIO_IRQ, GPIO_IN);
+    gpio_pull_down(RADIO_IRQ);  // So pin is typically low until radio asserts it high for irq
+
+    gpio_set_irq_enabled_with_callback(
+        RADIO_IRQ,          // GP21 / physical pin 27
+        GPIO_IRQ_EDGE_RISE, // Trigger on rising edge
+        true,               // Enable the interrupt
+        &radio_irq_handler  // Callback function to handle the interrupt
+    );
 
 }
+
+
+void radio_irq_handler(uint gpio, uint32_t events) {
+    // Set flag 
+    radio_event = true;
+}
+
 
 
 
