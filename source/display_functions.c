@@ -1,7 +1,7 @@
 
 
 //////////////////////////////////////
-//	           INCLUDES             //
+//             INCLUDES             //
 //////////////////////////////////////
 
 // Standard includes / hardware headers
@@ -10,15 +10,25 @@
 #include <stdio.h>
 #include <string.h>
 
-// File includes
+// User defined headers
 #include "display_functions.h"
 #include "display_font.h"
 #include "peripheral_setup.h"
 
 
+
 //////////////////////////////////////
 //	           FUNCTIONS            //
 //////////////////////////////////////
+
+// Bonus function in here for now
+void stdio_send_ds4_outputs(struct bt_hid_state* state)
+{
+	printf("buttons: %04x, l: %d,%d, r: %d,%d, l2,r2: %d,%d hat: %d\n",
+				state->buttons, state->lx, state->ly, state->rx, state->ry,
+				state->l2, state->r2, state->hat);
+}
+
 
 
 void send_i2c_command(uint8_t cmd) {
@@ -347,11 +357,13 @@ void display_inputs(struct bt_hid_state* ds4_state){
     uint16_t buttons_prev;
     uint8_t PAD_prev;
 
+    /*
     bool DIP1_prev;
     bool DIP2_prev;
     bool DIP3_prev;
     bool DIP4_prev;
 
+    
     // Values for storing the current DIP switch state
     bool dip_1;
     bool dip_2;
@@ -388,7 +400,7 @@ void display_inputs(struct bt_hid_state* ds4_state){
         send_small_char(dip_4, 120, 7);
         DIP4_prev = dip_4;
     }
-
+    */
 
     
     ////////////////////////////////////////////////
