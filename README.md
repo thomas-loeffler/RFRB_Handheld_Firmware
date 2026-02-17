@@ -6,7 +6,7 @@
 
 ![Pico W Pinout](documents/images/pico_w_pinout.png)
 
-See below the pin assignments for this project:
+### See below the pin assignments for this project:
 
 Pin 1 = GP0 = Simple Cycle Pin (testing purposes only)  
 
