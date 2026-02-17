@@ -27,9 +27,9 @@ Pin 26 = GP20 = RADIO RST
 Pin 27 = GP21 = RADIO IRQ0 (G0)
 Pin 29 = GP22 = RADIO EN  
 
-Pin 31 = GP26 = RADIO IRQ3 (G3) (Precautionary)
-Pin 32 = GP27 = RADIO IRQ2 (G2) (Precautionary)
-Pin 34 = GP28 = RADIO IRQ1 (G1) (Precautionary)
+Pin 31 = GP26 = RADIO IRQ3 (G3) (Precautionary)  
+Pin 32 = GP27 = RADIO IRQ2 (G2) (Precautionary)  
+Pin 34 = GP28 = RADIO IRQ1 (G1) (Precautionary)  
 
 
 
