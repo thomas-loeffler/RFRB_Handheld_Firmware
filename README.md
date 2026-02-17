@@ -1,24 +1,12 @@
-# Heading
-
-## Sub-heading
-
-This is the repository for the handheld deployment on Trine's Robotic Football Team's running back
+# Senior Design Project
 
 
-### Sub-sub-heading
-
-```bash
-this is a copy-able code box
-```
-
-this is a photo
-![wiring](documents/images/setup.png)
 
 ## Wiring / Pinout
 
-See below the pin assignments for this project:
-
 ![Pico W Pinout](documents/images/pico_w_pinout.png)
+
+See below the pin assignments for this project:
 
 Pin 1 = GP0 = Simple Cycle Pin (testing purposes only)  
 
@@ -38,5 +26,4 @@ Pin 25 = GP19 = SPI MOSI
 Pin 26 = GP20 = RADIO RST  
 Pin 27 = GP21 = RADIO IRQ  
 Pin 29 = GP22 = RADIO EN  
-
 
