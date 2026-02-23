@@ -64,3 +64,8 @@
 //////////////////////////////////////
 //       FUNCTION PROTOTYPES        //
 //////////////////////////////////////
+
+void rfm69_spi_write(uint8_t reg, uint8_t value);
+uint8_t rfm69_spi_read(uint8_t reg);
+void radio_reset(void);
+void check_version(void);

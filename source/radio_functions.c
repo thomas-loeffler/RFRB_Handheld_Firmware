@@ -40,10 +40,12 @@ uint8_t rfm69_spi_read(uint8_t reg) {
 
 
 void radio_reset(void) {
-    gpio_put(RADIO_RST, 0);
-    sleep_ms(10);
-    gpio_put(RADIO_RST, 1);
-    sleep_ms(10);
+    gpio_put(RADIO_RST, 0); // ensure its low before the pulse
+    //sleep_ms(1);
+    //gpio_put(RADIO_RST, 1);
+    //sleep_us(100); // Datasheet specifies at least 100us low
+    //gpio_put(RADIO_RST, 0);
+    sleep_ms(10); // Ready after 5ms, give it a bit more time to be safe
 }
 
 

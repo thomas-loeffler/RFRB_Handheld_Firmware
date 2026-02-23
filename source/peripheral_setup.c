@@ -51,6 +51,11 @@ void GPIO_setup(void) {
     gpio_pull_up(DIP2);
     gpio_pull_up(DIP3);
     gpio_pull_up(DIP4);
+
+    gpio_init(RADIO_RST); // GP20 / physical pin 26
+    gpio_set_dir(RADIO_RST, GPIO_OUT);
+    gpio_pull_down(RADIO_RST); // Ensure it's low by default, since reset is active high
+    gpio_put(RADIO_RST, 0); // reset active high, so start with it low
 }
 
 
