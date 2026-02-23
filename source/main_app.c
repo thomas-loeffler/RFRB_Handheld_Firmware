@@ -70,4 +70,4 @@ void main(void){
 	}
 }
 
-// if(bt_hid_is_connected()) useful function to have in the future
+// if(bt_hid_is_connected()) useful function to have in the future, may need to use for diconnect logic
