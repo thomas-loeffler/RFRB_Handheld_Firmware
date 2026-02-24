@@ -81,6 +81,10 @@ void radio_setup(void) {
     rfm69_spi_write(REG_FDEVMSB, FDEV_50k_MSB); // 50kHz frequency deviation
     rfm69_spi_write(REG_FDEVLSB, FDEV_50k_LSB);
 
+    rfm69_spi_write(REG_FRFMSB, FRF_915_MSB); // 915MHz frequency
+    rfm69_spi_write(REG_FRFMID, FRF_915_MID);
+    rfm69_spi_write(REG_FRFLSB, FRF_915_LSB); // Always write LSB last since freqnecy only updates on LSB write
+
 }
 
 
@@ -102,6 +106,10 @@ void verify_radio_setup(void) {
     uint8_t fdev_msb = rfm69_spi_read(REG_FDEVMSB);
     uint8_t fdev_lsb = rfm69_spi_read(REG_FDEVLSB);
 
+    uint8_t frf_msb = rfm69_spi_read(REG_FRFMSB);
+    uint8_t frf_mid = rfm69_spi_read(REG_FRFMID);
+    uint8_t frf_lsb = rfm69_spi_read(REG_FRFLSB);
+
 
 
     printf("RegOpMode     : 0x%02X (expected 0x04)\n", mode);
@@ -120,6 +128,10 @@ void verify_radio_setup(void) {
     printf("RegFdevMSB    : 0x%02X (expected 0x03)\n", fdev_msb);
     printf("RegFdevLSB    : 0x%02X (expected 0x33)\n", fdev_lsb);
 	
+    printf("RegFrfMSB     : 0x%02X (expected 0xE4)\n", frf_msb);
+    printf("RegFrfMID     : 0x%02X (expected 0xC0)\n", frf_mid);
+    printf("RegFrfLSB     : 0x%02X (expected 0x00)\n", frf_lsb);
+
 	if (mode == 0x04 && 
         sync_config == 0x98 &&
         sync_val1   == 0xCA &&
@@ -130,7 +142,10 @@ void verify_radio_setup(void) {
         bitrate_msb == 0x01 &&
         bitrate_lsb == 0x40 &&
         fdev_msb    == 0x03 &&
-        fdev_lsb    == 0x33) {
+        fdev_lsb    == 0x33 &&
+        frf_msb     == 0xE4 &&
+        frf_mid     == 0xC0 &&
+        frf_lsb     == 0x00) {
         printf("\nRadio setup SUCCESSFUL!\n \n");
     } else {
         printf("\nRadio setup FAILED\n \n");

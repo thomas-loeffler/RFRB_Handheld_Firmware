@@ -54,7 +54,8 @@
 #define REG_BITRATEMSB      0x03
 #define REG_BITRATELSB      0x04
 // Sets the bit rate of the radio, split across two bytes
-// Formula: BitRate = F_OSC / BR_value = 32,000,000 / BR_value
+// Formula: BitRate = F_osc / BR_value
+// F_osc = crystal frequency = 32MHz
 #define BR_100kb_MSB        0x01    // 100kbps bitrate MSB value
 #define BR_100kb_LSB        0x40    // 100kbps bitrate LSB value
 // Higher bitrate = wider RX bandwidth needed = more noise susceptibility
@@ -70,8 +71,9 @@
 // Ex. at 915MHz with 50kHz deviation:
 //   1 bit = 915.050 MHz
 //   0 bit = 914.950 MHz
-//
-// Formula: Fdev_actual = 61.035Hz * Fdev_reg
+// F_step = smallest possible frequency step (the RFM69 has a 19-bit frequency synthesizer)
+// F_step = F_osc / 2^19 = 32,000,000 / 524,288 = 61.035 Hz
+// Formula: Fdev_actual = F_step * Fdev_reg
 // Fdev_reg = desired_Fdev / 61.035
 //
 // Modulation Index = Fdev / (Bitrate / 2)      target 1.0 for best performance
@@ -87,12 +89,51 @@
 #define REG_FRFMSB          0x07
 #define REG_FRFMID          0x08
 #define REG_FRFLSB          0x09
+// Sets the carrier frequency - the center frequency the radio transmits and receives on
+// F_step = F_osc / 2^19 = 32,000,000 / 524,288 = 61.035 Hz
+// Formula: Frf = F_step * Frf_value
+// Frf_value = desired_frequency / 61.035
+// Split across 3 bytes, frequency only takes effect when LSB is written
+// so always write in order MSB -> Mid -> LSB
+//   915 MHz: 0xE4, 0xC0, 0x00 = 14,991,360 * 61.035 = 914,997,658 Hz ~ 915 MHz
+#define FRF_915_MSB          0xE4
+#define FRF_915_MID          0xC0
+#define FRF_915_LSB          0x00
+
 
 
 // ====== POWER / RECEIVER ======
 #define REG_PALEVEL         0x11  // TX power
 #define REG_LNA             0x18  // RX gain
+
+// ---------- RX Bandwidth Register ----------
 #define REG_RXBW            0x19  // RX bandwidth
+// Controls the receiver channel filter bandwidth
+// Bits 7-5: DccFreq - DC cancellation filter cutoff frequency
+//           010 = default, leave here unless you have DC offset issues
+//
+// Bits 4-3: RxBwMant 00 = 16, 01 = 20, 10 = 24
+//
+// Bits 2-0: RxBwExp - exponent of bandwidth formula
+//           In FSK, RX bandwidth is:
+//           RxBw = F_osc(32MHz) / (RxBwMant * 2^(RxBwExp + 2))
+//
+// Rule: RxBw >= Fdev + (Bitrate / 2)
+// At 100kbps, 50kHz deviation: RxBw >= 50,000 + 50,000 = 100kHz minimum
+//
+// Common values for FSK:
+//   RxBwMant=20, RxBwExp=5 -> 50  kHz: 0x4A would be exp=2, see table
+//   RxBwMant=20, RxBwExp=2 -> 100 kHz: 0x4A  <- selected
+//   RxBwMant=20, RxBwExp=1 -> 200 kHz: 0x42
+//   RxBwMant=20, RxBwExp=0 -> 400 kHz: 0x40
+//
+// Narrower = less noise but must be wide enough to capture your signal
+// Wider    = captures signal easily but lets in more noise
+// Must update this register if bitrate or deviation changes
+
+//Also worth knowing — there is a sister register 0x1A — RegAfcBw which sets the bandwidth used during automatic frequency correction at startup. It's recommended to set this slightly wider than RegRxBw, typically 1.5-2x:
+//crfm69_spi_write(0x1A, 0x42); // AFC bandwidth 200kHz, wider than RxBw for better AFC
+
 
 
 // ==== INTERRUPTS / STATUS ====
