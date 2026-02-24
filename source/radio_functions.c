@@ -93,6 +93,10 @@ void radio_setup(void) {
 
     rfm69_spi_write(REG_PARAMP, DEFAULT_PARAMP); // Set PA ramp-up time to default (40us)
 
+    rfm69_spi_write(REG_PALEVEL, TX_POWER_13dBm); // PA1 on, PA2 off, OutputPower = 31 = +13dBm
+
+    rfm69_spi_write(REG_LNA, MY_LNA_RX_POWER); // 50 ohm input impedance, ACG on
+
 
 }
 
@@ -127,6 +131,10 @@ void verify_radio_setup(void) {
 
     uint8_t pa_ramp_time = rfm69_spi_read(REG_PARAMP);
 
+    uint8_t pa_level = rfm69_spi_read(REG_PALEVEL);
+
+    uint8_t lna = rfm69_spi_read(REG_LNA);
+
 
 
 
@@ -157,7 +165,11 @@ void verify_radio_setup(void) {
 
     printf("RegPacketConfig2 : 0x%02X (expected 0x32)\n", packet_config2);
 
-    printf("RegPaRamp       : 0x%02X (expected 0x09)\n", pa_ramp_time);
+    printf("RegPaRamp     : 0x%02X (expected 0x09)\n", pa_ramp_time);
+
+    printf("RegPaLevel    : 0x%02X (expected 0x5F)\n", pa_level);
+
+    printf("RegLNA        : 0x%02X (expected 0x00)\n", lna);
 
 	if (mode == 0x04 && 
         sync_config == 0x98 &&
@@ -176,7 +188,8 @@ void verify_radio_setup(void) {
         rx_bw       == 0x4A &&
         packet_config1 == 0x90 &&
         packet_config2 == 0x32 &&
-        pa_ramp_time == 0x09) {
+        pa_ramp_time == 0x09 &&
+        pa_level    == 0x5F) {
         printf("\nRadio setup SUCCESSFUL!\n \n");
     } else {
         printf("\nRadio setup FAILED\n \n");

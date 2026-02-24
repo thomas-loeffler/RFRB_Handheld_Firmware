@@ -85,7 +85,7 @@
 
 
 
-// ======== RF FREQUENCY ========
+// ---------- RF FREQUENCY ----------
 #define REG_FRFMSB          0x07
 #define REG_FRFMID          0x08
 #define REG_FRFLSB          0x09
@@ -102,8 +102,31 @@
 
 
 
-// ====== POWER / RECEIVER ======
-#define REG_PALEVEL         0x11  // TX power
+// ---------- TX Power Register ----------
+#define REG_PALEVEL         0x11
+// Controls which power amplifiers are active and the output power level
+// The RFM69HCW has 3 power amplifiers across 2 output pins:
+//   PA0 → RFIO pin    (NOT connected on Adafruit breakout, unusable)
+//   PA1 → PA_BOOST pin (our amplifier)
+//   PA2 → PA_BOOST pin (combines with PA1 for higher power, adds mode switching complexity)
+//
+// Bit 7:    Pa0_On        - 0 = off, RFIO pin not connected on Adafruit breakout
+// Bit 6:    Pa1_On        - 1 = on,  PA1 on PA_BOOST pin
+// Bit 5:    Pa2_On        - 0 = off, not needed, +13dBm is sufficient for 200ft
+// Bits 4-0: OutputPower  - power level 0-31
+//                          Pout formula depends on PA combination:
+//                          PA1 only:          Pout = -18 + OutputPower (-2  to +13 dBm)
+//                          PA1 + PA2:         Pout = -14 + OutputPower (+2  to +17 dBm)
+//                          PA1 + PA2 + high:  Pout = -11 + OutputPower (+5  to +20 dBm)
+//
+// Selected: PA1 only, OutputPower = 31 → -18 + 31 = +13dBm
+// +13dBm chosen over +20dBm because:
+//   - +20dBm requires toggling test registers 0x5A and 0x5C on every TX/RX switch
+//   - forgetting to reset test registers before RX can damage the chip
+//   - +20dBm only adds 7dB over +13dBm, negligible at these distances
+#define TX_POWER_13dBm 0x5F // PA1 on, PA2 off, OutputPower = 31 = +13dBm
+
+// ---------- Power Amplifier Ramp Register ----------
 #define REG_PARAMP           0x12  // PA ramp up time
 // Controls the rise and fall time of the power amplifier when turning on and off
 // Slower ramp = cleaner spectrum, less splatter into adjacent channels
@@ -116,7 +139,24 @@
 // default is 0000 1001 = 0x90 which is 40us ramp time according to datasheet. Seems like no compelling reason to change
 #define DEFAULT_PARAMP 0x09 // 40us ramp time
 
+// ---------- RX Power / Low Noise Amplifier Register ----------
 #define REG_LNA             0x18  // RX gain
+// Controls the Low Noise Amplifier - the first amplifier in the receive chain
+// Amplifies incoming antenna signal before any processing occurs
+// Called "low noise" because it amplifies weak signals without adding significant noise
+//
+// Bit 7:    LnaZin          - input impedance matching
+//                             0 = 50 ohm  (use this, we have 50ohm antenna)
+//                             1 = 200 ohm
+// Bit 6: reserved, always 0
+// Bits 5-3: LnaCurrentGain  - READ ONLY, current gain set by AGC
+//                             shows which gain setting AGC has selected (G1-G6)
+// Bits 2-0: LnaGainSelect   - gain control mode
+//                             000 = AGC (Automatic Gain Control) on, gain set automatically (recommended)
+//                             AGC automatically selects best gain for signal conditions   
+//                             AGC is pretty much required with the constant changing distance of the robot and varying signal strength
+//                             manually setting gain means radio cant adapt to varying signal strength
+#define MY_LNA_RX_POWER 0x00 // 50 ohm input impedance, AGC on
 
 // ---------- RX Bandwidth Register ----------
 #define REG_RXBW            0x19  // RX bandwidth
