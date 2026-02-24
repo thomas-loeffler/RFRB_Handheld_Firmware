@@ -7,11 +7,12 @@
 //////////////////////////////////////
 
 
-// --------- FIFO Data Register ---------
+// ---------- FIFO Data Register ----------
 #define REG_FIFO            0x00  // FIFO read/write
 
 
-// ------- Operating Mode Register -------
+
+// ---------- Operating Mode Register ----------
 #define REG_OPMODE          0x01  // Sleep / standby / TX / RX
 // Bit 7: SequencerOff - 0 = hardware sequencer runs automatically (handles PLL lock, mode transitions)
 //                       1 = manual control of all timing, not recommended
@@ -30,7 +31,10 @@
 #define MODE_TRANSMIT       0x0C    // Transmitting, switch to this mode when sending a packet
 #define MODE_RECEIVE        0x10    // Receiving, switch to this mode when listening for packets
 
-// ------- Data Modulation Register -------
+
+
+
+// ---------- Data Modulation Register ----------
 #define REG_DATAMODUL       0x02  
 // Bits 7: unused, always 0
 // Bits 6-5: DataMode          - 00 = packet mode (recommended, hardware handles framing)
@@ -39,17 +43,44 @@
 // Bits 4-3: ModulationType    - 00 = FSK (recommended, robust in noisy environments)
 //                               01 = OOK (on-off keying, simpler but less noise resistant)
 // Bits 2: unused, always 0
-// Bits 1-0: ModulationShaping - 00 = no shaping (fine for most applications) (about smoothing frequency transitions, sinse we will be in fsk, but not important for us)
+// Bits 1-0: ModulationShaping - 00 = no shaping (fine for most applications) (about smoothing frequency transitions, since we will be in fsk, but not important for us)
 //                               01 = Gaussian BT=1.0 (GFSK, smoother transitions)
 //                               10 = Gaussian BT=0.5 (GFSK, tighter spectrum)
 //                               11 = Gaussian BT=0.3 (GFSK, tightest spectrum)
 
 
-// === DATA RATE / MODULATION ===
+
+// ---------- Bit Rate Registers ----------
 #define REG_BITRATEMSB      0x03
 #define REG_BITRATELSB      0x04
+// Sets the bit rate of the radio, split across two bytes
+// Formula: BitRate = F_OSC / BR_value = 32,000,000 / BR_value
+#define BR_100kb_MSB        0x01    // 100kbps bitrate MSB value
+#define BR_100kb_LSB        0x40    // 100kbps bitrate LSB value
+// Higher bitrate = wider RX bandwidth needed = more noise susceptibility
+// Lower bitrate  = narrower RX bandwidth = more noise rejection, better range
+
+
+
+// ---------- Frequency Deviation Registers ----------
 #define REG_FDEVMSB         0x05
 #define REG_FDEVLSB         0x06
+// Sets the FSK frequency deviation - the distance the carrier frequency shifts
+// above and below center to represent a 1 bit and a 0 bit respectively
+// Ex. at 915MHz with 50kHz deviation:
+//   1 bit = 915.050 MHz
+//   0 bit = 914.950 MHz
+//
+// Formula: Fdev_actual = 61.035Hz * Fdev_reg
+// Fdev_reg = desired_Fdev / 61.035
+//
+// Modulation Index = Fdev / (Bitrate / 2)      target 1.0 for best performance
+// Deviation MUST be updated if bitrate changes - they are linked:
+#define FDEV_50k_MSB         0x03    // 50kHz deviation (819*61.035 ~= 50,000)
+#define FDEV_50k_LSB         0x33    
+// Too low:  frequencies too close together, noise causes bit errors
+// Too high: wastes bandwidth, RX filter must be wider letting in more noise
+
 
 
 // ======== RF FREQUENCY ========

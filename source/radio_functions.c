@@ -75,6 +75,12 @@ void radio_setup(void) {
 
     rfm69_spi_write(REG_DATAMODUL, 0x00); // Packet mode, FSK, no shaping
 
+    rfm69_spi_write(REG_BITRATEMSB, BR_100kb_MSB); // 100kbps bitrate
+    rfm69_spi_write(REG_BITRATELSB, BR_100kb_LSB);
+
+    rfm69_spi_write(REG_FDEVMSB, FDEV_50k_MSB); // 50kHz frequency deviation
+    rfm69_spi_write(REG_FDEVLSB, FDEV_50k_LSB);
+
 }
 
 
@@ -90,13 +96,29 @@ void verify_radio_setup(void) {
 
     uint8_t data_modul = rfm69_spi_read(REG_DATAMODUL);
 
+    uint8_t bitrate_msb = rfm69_spi_read(REG_BITRATEMSB);
+    uint8_t bitrate_lsb = rfm69_spi_read(REG_BITRATELSB);
+
+    uint8_t fdev_msb = rfm69_spi_read(REG_FDEVMSB);
+    uint8_t fdev_lsb = rfm69_spi_read(REG_FDEVLSB);
+
+
+
     printf("RegOpMode     : 0x%02X (expected 0x04)\n", mode);
+
     printf("RegSyncConfig : 0x%02X (expected 0x98)\n", sync_config);
     printf("RegSyncValue1 : 0x%02X (expected 0xCA)\n", sync_val1);
     printf("RegSyncValue2 : 0x%02X (expected 0xFE)\n", sync_val2);
     printf("RegSyncValue3 : 0x%02X (expected 0xBA)\n", sync_val3);
     printf("RegSyncValue4 : 0x%02X (expected 0xBE)\n", sync_val4);
+
     printf("RegDataModul  : 0x%02X (expected 0x00)\n", data_modul);
+
+    printf("RegBitrateMSB : 0x%02X (expected 0x01)\n", bitrate_msb);
+    printf("RegBitrateLSB : 0x%02X (expected 0x40)\n", bitrate_lsb);
+
+    printf("RegFdevMSB    : 0x%02X (expected 0x03)\n", fdev_msb);
+    printf("RegFdevLSB    : 0x%02X (expected 0x33)\n", fdev_lsb);
 	
 	if (mode == 0x04 && 
         sync_config == 0x98 &&
@@ -104,7 +126,11 @@ void verify_radio_setup(void) {
         sync_val2   == 0xFE &&
         sync_val3   == 0xBA &&
         sync_val4   == 0xBE &&
-        data_modul  == 0x00) {
+        data_modul  == 0x00 &&
+        bitrate_msb == 0x01 &&
+        bitrate_lsb == 0x40 &&
+        fdev_msb    == 0x03 &&
+        fdev_lsb    == 0x33) {
         printf("\nRadio setup SUCCESSFUL!\n \n");
     } else {
         printf("\nRadio setup FAILED\n \n");
