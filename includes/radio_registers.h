@@ -229,6 +229,20 @@
 
 #define REG_PAYLOADLENGTH   0x38
 #define REG_FIFOTHRESH      0x3C
+// Controls when transmission starts and the FIFO threshold level
+//
+// Bit 7:    TxStartCondition - what triggers the radio to start transmitting (when in TX mode)
+//                              0 = start TX when FIFO threshold is exceeded
+//                              1 = start TX when there is at least 1 byte in FIFO (FifoNotEmpty) (do this option, becasue when switching to tx the payload should be ready)
+// Bits 6-0: FifoThreshold    - number of bytes that must be in FIFO before FifoLevel
+//                              interrupt flag is set, value 0-63
+//                              only relevant if TxStartCondition = 0
+//                              with TxStartCondition = 1 this value is ignored for TX
+//                              still used for RX to trigger FifoLevel interrupt
+//                              set to packet size - 1 as a reasonable default
+#define MY_FIFOTHRESH 0x80 // Transmit if fifo not empty, threshhold = 0
+
+// ---------- Packet Configuration Register 2 ----------
 #define REG_PACKETCONFIG2   0x3D
 // Additional packet engine controls
 //

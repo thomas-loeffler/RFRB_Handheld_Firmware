@@ -97,6 +97,8 @@ void radio_setup(void) {
 
     rfm69_spi_write(REG_LNA, MY_LNA_RX_POWER); // 50 ohm input impedance, ACG on
 
+    rfm69_spi_write(REG_FIFOTHRESH, MY_FIFOTHRESH); // Transmit if fifo not empty, threshhold = 0
+
 
 }
 
@@ -135,6 +137,8 @@ void verify_radio_setup(void) {
 
     uint8_t lna = rfm69_spi_read(REG_LNA);
 
+    uint8_t fifothresh = rfm69_spi_read(REG_FIFOTHRESH);
+
 
 
 
@@ -161,15 +165,17 @@ void verify_radio_setup(void) {
 
     printf("RegRxBw       : 0x%02X (expected 0x4A)\n", rx_bw);
 
-    printf("RegPacketConfig1 : 0x%02X (expected 0x90)\n", packet_config1);
+    printf("RegPacketCfg1 : 0x%02X (expected 0x90)\n", packet_config1);
 
-    printf("RegPacketConfig2 : 0x%02X (expected 0x32)\n", packet_config2);
+    printf("RegPacketCfg2 : 0x%02X (expected 0x32)\n", packet_config2);
 
     printf("RegPaRamp     : 0x%02X (expected 0x09)\n", pa_ramp_time);
 
     printf("RegPaLevel    : 0x%02X (expected 0x5F)\n", pa_level);
 
     printf("RegLNA        : 0x%02X (expected 0x00)\n", lna);
+
+    printf("RegFifoThresh : 0x%02X (expected 0x80)\n", fifothresh);
 
 	if (mode == 0x04 && 
         sync_config == 0x98 &&
@@ -189,7 +195,9 @@ void verify_radio_setup(void) {
         packet_config1 == 0x90 &&
         packet_config2 == 0x32 &&
         pa_ramp_time == 0x09 &&
-        pa_level    == 0x5F) {
+        pa_level    == 0x5F &&
+        lna         == 0x00 &&
+        fifothresh  == 0x80) {
         printf("\nRadio setup SUCCESSFUL!\n \n");
     } else {
         printf("\nRadio setup FAILED\n \n");
