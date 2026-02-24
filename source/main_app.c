@@ -19,6 +19,8 @@
 #include "peripheral_setup.h" // for all peripheral initialization
 #include "display_functions.h" // for the I2C display
 #include "radio_functions.h" // for the RFM69 radio functions
+#include "radio_registers.h" // for the RFM69 register definitions
+
 
 
 
@@ -45,17 +47,22 @@ void main(void){
 
 
 	GPIO_setup(); // Setup the GPIO pins for the DIP switches and the simple cycle pin
-
-	// I2C Screen setup
 	i2c_setup(); // Setup the I2C peripheral for the display
+	spi_setup(); // Setup the SPI peripheral for the RFM69 radio
+
+	
+	// I2C Screen setup
 	screen_init(); // Initialize the I2C screen with predefined commands
 	clear_display();
 	display_trine_logo(); // Show the Trine logo on the display at startup
-	sleep_ms(2000); // Let the logo be on the screen for a bit before moving on
+	
+
+	radio_setup();
+	sleep_ms(5000);
+	verify_radio_setup();
 	
 	
-	spi_setup(); // Setup the SPI peripheral for the RFM69 radio
-	radio_reset(); // Reset the radio to ensure it's in a known state
+	
 	
 
 	//clear_display();
@@ -68,7 +75,7 @@ void main(void){
 
 		bt_hid_get_latest(&ds4_state); // Aquire latest Bluetooth controller state
 
-		check_version(); // Check the version register to verify SPI communication is working\
+		check_version(); // Check the version register to verify SPI communication is working
 
 		sleep_ms(500); // Sleep for a bit to avoid spamming the USB serial output and to give the radio some breathing room
 

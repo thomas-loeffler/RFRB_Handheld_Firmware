@@ -12,7 +12,11 @@
 // User defined headers
 #include "radio_functions.h"
 #include "peripheral_setup.h" // For GPIO pin definitions
+#include "radio_registers.h" // For register definitions and bit masks
 
+
+
+const uint8_t SYNC_WORD[4] = {0xCA, 0xFE, 0xBA, 0xBE}; // Sync word to use for the radio
 
 
 //////////////////////////////////////
@@ -38,18 +42,16 @@ uint8_t rfm69_spi_read(uint8_t reg) {
 }
 
 
-
+// Shouldn't need to reset the radio on every boot, but this is useful for testing and ensures a known state
 void radio_reset(void) {
-    gpio_put(RADIO_RST, 0); // ensure its low before the pulse
-    //sleep_ms(1);
-    //gpio_put(RADIO_RST, 1);
-    //sleep_us(100); // Datasheet specifies at least 100us low
-    //gpio_put(RADIO_RST, 0);
-    sleep_ms(10); // Ready after 5ms, give it a bit more time to be safe
+    gpio_put(RADIO_RST, 1);
+    sleep_ms(1); // Datasheet specifies at least 100us high, so 1ms is plenty
+    gpio_put(RADIO_RST, 0);
+    sleep_ms(5); // Ready after 5ms
 }
 
 
-
+// Debugging function
 void check_version(void) {
     uint8_t version = rfm69_spi_read(0x10); // RegVersion
     printf("RFM69 version: 0x%02X\n", version);
@@ -57,5 +59,54 @@ void check_version(void) {
         printf("SPI communication failed!\n");
     } else {
         printf("SPI OK\n");
+    }
+}
+
+void radio_setup(void) {
+
+    rfm69_spi_write(REG_OPMODE, MODE_STANDBY); // Set to standby mode (if not already) to allow writing to registers
+
+    // ---------- Sync Word Configuration ----------
+    rfm69_spi_write(REG_SYNC_CONFIG, 0x98); // Sync on, 4 bytes sync word, 0 bit tolerance
+	rfm69_spi_write(REG_SYNCVALUE1, SYNC_WORD[0]);
+	rfm69_spi_write(REG_SYNCVALUE2, SYNC_WORD[1]);
+	rfm69_spi_write(REG_SYNCVALUE3, SYNC_WORD[2]);
+	rfm69_spi_write(REG_SYNCVALUE4, SYNC_WORD[3]);
+
+    rfm69_spi_write(REG_DATAMODUL, 0x00); // Packet mode, FSK, no shaping
+
+}
+
+
+void verify_radio_setup(void) {
+    // read back and verify all configured registers are correct
+    uint8_t mode = rfm69_spi_read(REG_OPMODE);
+
+    uint8_t sync_config = rfm69_spi_read(REG_SYNC_CONFIG);
+    uint8_t sync_val1   = rfm69_spi_read(REG_SYNCVALUE1);
+	uint8_t sync_val2   = rfm69_spi_read(REG_SYNCVALUE2);
+	uint8_t sync_val3   = rfm69_spi_read(REG_SYNCVALUE3);
+	uint8_t sync_val4   = rfm69_spi_read(REG_SYNCVALUE4);
+
+    uint8_t data_modul = rfm69_spi_read(REG_DATAMODUL);
+
+    printf("RegOpMode     : 0x%02X (expected 0x04)\n", mode);
+    printf("RegSyncConfig : 0x%02X (expected 0x98)\n", sync_config);
+    printf("RegSyncValue1 : 0x%02X (expected 0xCA)\n", sync_val1);
+    printf("RegSyncValue2 : 0x%02X (expected 0xFE)\n", sync_val2);
+    printf("RegSyncValue3 : 0x%02X (expected 0xBA)\n", sync_val3);
+    printf("RegSyncValue4 : 0x%02X (expected 0xBE)\n", sync_val4);
+    printf("RegDataModul  : 0x%02X (expected 0x00)\n", data_modul);
+	
+	if (mode == 0x04 && 
+        sync_config == 0x98 &&
+        sync_val1   == 0xCA &&
+        sync_val2   == 0xFE &&
+        sync_val3   == 0xBA &&
+        sync_val4   == 0xBE &&
+        data_modul  == 0x00) {
+        printf("\nRadio setup SUCCESSFUL!\n \n");
+    } else {
+        printf("\nRadio setup FAILED\n \n");
     }
 }

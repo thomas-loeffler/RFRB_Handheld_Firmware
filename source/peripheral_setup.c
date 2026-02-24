@@ -30,12 +30,14 @@ volatile bool radio_event = false;
 
 void GPIO_setup(void) {
     
+    // ---------- Simple Cycle Pin ----------
     // Initialize the simple cycle pin as an output and set high to start
     gpio_init(CYCLE); // GP0 / physical pin 1
     gpio_set_dir(CYCLE, GPIO_OUT);
     gpio_put(CYCLE, 1);  
 
 
+    // ---------- DIP Switches ----------
     // Initialize the DIP switch pins as inputs with pull-up resistors
     gpio_init(DIP1); // GP10 / physical pin 14
     gpio_init(DIP2); // GP11 / physical pin 15
@@ -52,9 +54,9 @@ void GPIO_setup(void) {
     gpio_pull_up(DIP3);
     gpio_pull_up(DIP4);
 
+    // ---------- Radio Reset Pin ----------
     gpio_init(RADIO_RST); // GP20 / physical pin 26
     gpio_set_dir(RADIO_RST, GPIO_OUT);
-    gpio_pull_down(RADIO_RST); // Ensure it's low by default, since reset is active high
     gpio_put(RADIO_RST, 0); // reset active high, so start with it low
 }
 
@@ -96,10 +98,12 @@ void spi_setup(void){
     gpio_set_function(SPI_SCK, GPIO_FUNC_SPI); // GP18 / physical pin 24
     gpio_set_function(SPI_MOSI, GPIO_FUNC_SPI); // GP19 / physical pin 25
     
+    // gpio_pull_up(SPI_MISO); // suggested but not needed for functionality
 
-    gpio_init(SPI_CS); // GP17 / physical pin 22
+    gpio_init(SPI_CS); // GP17 / physical pin 22 
     gpio_set_dir(SPI_CS, GPIO_OUT);
     gpio_put(SPI_CS, 1); // deselect device
+    //gpio_pull_up(SPI_CS); // suggested but not needed for functionality
 }
 
 
@@ -128,40 +132,4 @@ void radio_irq_handler(uint gpio, uint32_t events) {
     radio_event = true;
 }
 
-
-
-
-
-
-/*
-
-writing example
-uint8_t data = 0x55;
-
-gpio_put(CS_PIN, 0);                 // select device
-spi_write_blocking(spi0, &data, 1);  // send
-gpio_put(CS_PIN, 1);                 // deselect
-
-
-reading and writing at the same time example:
-uint8_t tx = 0x00;
-uint8_t rx;
-
-gpio_put(CS_PIN, 0);
-spi_write_read_blocking(spi0, &tx, &rx, 1);
-gpio_put(CS_PIN, 1);
-
-
-example reading a packet form the radio:
-
-uint8_t rx_buffer[64];   // storage for packet
-
-gpio_put(CS, 0);
-spi_write_blocking(spi0, &fifo_read_cmd, 1);
-spi_read_blocking(spi0, 0x00, rx_buffer, packet_length);
-gpio_put(CS, 1);
-
-
-
-*/
 
