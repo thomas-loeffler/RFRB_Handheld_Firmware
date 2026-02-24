@@ -85,6 +85,15 @@ void radio_setup(void) {
     rfm69_spi_write(REG_FRFMID, FRF_915_MID);
     rfm69_spi_write(REG_FRFLSB, FRF_915_LSB); // Always write LSB last since freqnecy only updates on LSB write
 
+    rfm69_spi_write(REG_RXBW, 0x4A); // Rx bandwidth 100kHz
+
+    rfm69_spi_write(REG_PACKETCONFIG1, 0x90); // Fixed length packets, CRC on, discard bad packets, no address filtering
+
+    rfm69_spi_write(REG_PACKETCONFIG2, 0x32); //InterPacketRxDelay 80us, auto RX restart on, AES encryption off
+
+    rfm69_spi_write(REG_PARAMP, DEFAULT_PARAMP); // Set PA ramp-up time to default (40us)
+
+
 }
 
 
@@ -110,6 +119,16 @@ void verify_radio_setup(void) {
     uint8_t frf_mid = rfm69_spi_read(REG_FRFMID);
     uint8_t frf_lsb = rfm69_spi_read(REG_FRFLSB);
 
+    uint8_t rx_bw = rfm69_spi_read(REG_RXBW);
+
+    uint8_t packet_config1 = rfm69_spi_read(REG_PACKETCONFIG1);
+
+    uint8_t packet_config2 = rfm69_spi_read(REG_PACKETCONFIG2);
+
+    uint8_t pa_ramp_time = rfm69_spi_read(REG_PARAMP);
+
+
+
 
 
     printf("RegOpMode     : 0x%02X (expected 0x04)\n", mode);
@@ -132,6 +151,14 @@ void verify_radio_setup(void) {
     printf("RegFrfMID     : 0x%02X (expected 0xC0)\n", frf_mid);
     printf("RegFrfLSB     : 0x%02X (expected 0x00)\n", frf_lsb);
 
+    printf("RegRxBw       : 0x%02X (expected 0x4A)\n", rx_bw);
+
+    printf("RegPacketConfig1 : 0x%02X (expected 0x90)\n", packet_config1);
+
+    printf("RegPacketConfig2 : 0x%02X (expected 0x32)\n", packet_config2);
+
+    printf("RegPaRamp       : 0x%02X (expected 0x09)\n", pa_ramp_time);
+
 	if (mode == 0x04 && 
         sync_config == 0x98 &&
         sync_val1   == 0xCA &&
@@ -145,7 +172,11 @@ void verify_radio_setup(void) {
         fdev_lsb    == 0x33 &&
         frf_msb     == 0xE4 &&
         frf_mid     == 0xC0 &&
-        frf_lsb     == 0x00) {
+        frf_lsb     == 0x00 &&
+        rx_bw       == 0x4A &&
+        packet_config1 == 0x90 &&
+        packet_config2 == 0x32 &&
+        pa_ramp_time == 0x09) {
         printf("\nRadio setup SUCCESSFUL!\n \n");
     } else {
         printf("\nRadio setup FAILED\n \n");

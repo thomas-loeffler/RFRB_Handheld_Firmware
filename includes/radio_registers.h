@@ -104,6 +104,18 @@
 
 // ====== POWER / RECEIVER ======
 #define REG_PALEVEL         0x11  // TX power
+#define REG_PARAMP           0x12  // PA ramp up time
+// Controls the rise and fall time of the power amplifier when turning on and off
+// Slower ramp = cleaner spectrum, less splatter into adjacent channels
+// Faster ramp = quicker PA switching, lower latency between packets
+// Must be considered alongside InterPacketRxDelay in REG_PACKETCONFIG2
+// The RX delay should be >= the ramp time to avoid the receiver mistaking PA ramp-down for a new packet
+//
+// Bits 7-4: reserved, always 0
+// Bits 3-0: PaRamp
+// default is 0000 1001 = 0x90 which is 40us ramp time according to datasheet. Seems like no compelling reason to change
+#define DEFAULT_PARAMP 0x09 // 40us ramp time
+
 #define REG_LNA             0x18  // RX gain
 
 // ---------- RX Bandwidth Register ----------
@@ -112,7 +124,7 @@
 // Bits 7-5: DccFreq - DC cancellation filter cutoff frequency
 //           010 = default, leave here unless you have DC offset issues
 //
-// Bits 4-3: RxBwMant 00 = 16, 01 = 20, 10 = 24
+// Bits 4-3: RxBwMant 00 = 16, 01 = 20, 10 = 24, 11 = reserved
 //
 // Bits 2-0: RxBwExp - exponent of bandwidth formula
 //           In FSK, RX bandwidth is:
@@ -120,12 +132,10 @@
 //
 // Rule: RxBw >= Fdev + (Bitrate / 2)
 // At 100kbps, 50kHz deviation: RxBw >= 50,000 + 50,000 = 100kHz minimum
-//
-// Common values for FSK:
-//   RxBwMant=20, RxBwExp=5 -> 50  kHz: 0x4A would be exp=2, see table
-//   RxBwMant=20, RxBwExp=2 -> 100 kHz: 0x4A  <- selected
-//   RxBwMant=20, RxBwExp=1 -> 200 kHz: 0x42
-//   RxBwMant=20, RxBwExp=0 -> 400 kHz: 0x40
+// (RxBwMant * 2^(RxBwExp + 2)) = 32M / 100k
+// (RxBwMant * 2^(RxBwExp + 2)) = 320
+// if RxBwMant = 20, then 2^(RxBwExp + 2) must equal 16 -> RxBwExp = 2
+// so REG_RXBW = 010 01 010 = 0100 1010 = 0x4A
 //
 // Narrower = less noise but must be wide enough to capture your signal
 // Wider    = captures signal easily but lets in more noise
@@ -160,9 +170,41 @@
 #define REG_SYNCVALUE4      0x32
 
 #define REG_PACKETCONFIG1   0x37
+// Controls packet engine behavior
+//
+// Bit 7:    PacketFormat      - 0 = fixed length packets (hard to remeber to change later)
+//                               1 = variable length packets (recommended, more flexible)
+// Bits 6-5: DcFree            - 00 = none (recommended for RFM69 with sync word)
+//                               01 = Manchester encoding (halves throughput, not needed)
+//                               10 = Whitening (scrambles data for DC balance)
+// Bit 4:    CrcOn             - 0 = CRC disabled
+//                               1 = CRC enabled (recommended, filters corrupt packets)
+// Bit 3:    CrcAutoClearOff   - 0 = clear FIFO on CRC fail (recommended, discard bad packets)
+//                               1 = keep bad packet in FIFO
+// Bits 2-1: AddressFiltering  - 00 = none (recommended, only 2 nodes on network)
+//                               01 = match node address
+//                               10 = match node or broadcast address
+// Bit 0:    reserved, always 0
+// reccomended value: 1001 0000 = 0x90 variable length packets, CRC on, discard bad packets, no address filtering
+
 #define REG_PAYLOADLENGTH   0x38
 #define REG_FIFOTHRESH      0x3C
 #define REG_PACKETCONFIG2   0x3D
+// Additional packet engine controls
+//
+// Bits 7-4: InterPacketRxDelay - delay between packet received and receiver restart. (after you've finished reading the last packet from the fifo(fifo clear), wait this long before hunting for the next one.)
+//                                value = 2^(InterPacketRxDelay) / bitrate
+//                                value = 2^(InterPacketRxDelay) / 100,000 
+//                                0011 = 2^3 / 100,000 = 80us, double PA ramp time to be safe
+//                                Must match or exceed the transmitter’s PA(power amplifier) ramp-down time. found in reg 0x12
+// Bit 3:    reserved, always 0
+// Bit 2:    RestartRx          - write 1 to manually force receiver restart
+//                                always reads back 0, one shot trigger
+// Bit 1:    AutoRxRestartOn    - 1 = automatically restart receiver after packet received
+//                                0 = manual restart required, not recommended
+// Bit 0:    AesOn              - 0 = AES encryption off (keep off for now, can add later)
+//                                1 = AES encryption on 
+// reccomended value: 0011 0010 = 0x32 InterPacketRxDelay 80us, auto RX restart on, AES encryption off
 
 
 // ======== SANITY CHECK ========
