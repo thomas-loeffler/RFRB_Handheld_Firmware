@@ -12,8 +12,9 @@
 
 
 
+
 // ---------- Operating Mode Register ----------
-#define REG_OPMODE          0x01  // Sleep / standby / TX / RX
+#define REG_OPMODE          0x01 
 // Bit 7: SequencerOff - 0 = hardware sequencer runs automatically (handles PLL lock, mode transitions)
 //                       1 = manual control of all timing, not recommended
 // Bit 6: ListenOn     - 0 = normal operation
@@ -36,17 +37,19 @@
 
 // ---------- Data Modulation Register ----------
 #define REG_DATAMODUL       0x02  
-// Bits 7: unused, always 0
+// Bit 7: unused, always 0
 // Bits 6-5: DataMode          - 00 = packet mode (recommended, hardware handles framing)
 //                               10 = continuous mode with bit synchronizer
 //                               11 = continuous mode without bit synchronizer
 // Bits 4-3: ModulationType    - 00 = FSK (recommended, robust in noisy environments)
 //                               01 = OOK (on-off keying, simpler but less noise resistant)
-// Bits 2: unused, always 0
+// Bit 2: unused, always 0
 // Bits 1-0: ModulationShaping - 00 = no shaping (fine for most applications) (about smoothing frequency transitions, since we will be in fsk, but not important for us)
 //                               01 = Gaussian BT=1.0 (GFSK, smoother transitions)
 //                               10 = Gaussian BT=0.5 (GFSK, tighter spectrum)
 //                               11 = Gaussian BT=0.3 (GFSK, tightest spectrum)
+#define MY_DATAMODUL 0x00 // Packet mode, FSK, no shaping
+
 
 
 
@@ -56,10 +59,12 @@
 // Sets the bit rate of the radio, split across two bytes
 // Formula: BitRate = F_osc / BR_value
 // F_osc = crystal frequency = 32MHz
+// MSB 2^8 + LSB 2^6 = 320 -> 32M / 320 = 100,000 bps
 #define BR_100kb_MSB        0x01    // 100kbps bitrate MSB value
 #define BR_100kb_LSB        0x40    // 100kbps bitrate LSB value
 // Higher bitrate = wider RX bandwidth needed = more noise susceptibility
 // Lower bitrate  = narrower RX bandwidth = more noise rejection, better range
+
 
 
 
@@ -85,6 +90,7 @@
 
 
 
+
 // ---------- RF FREQUENCY ----------
 #define REG_FRFMSB          0x07
 #define REG_FRFMID          0x08
@@ -99,6 +105,14 @@
 #define FRF_915_MSB          0xE4
 #define FRF_915_MID          0xC0
 #define FRF_915_LSB          0x00
+
+
+
+
+// ---------- Version Register ----------
+#define REG_VERSION         0x10  // should read 0x24
+// Read-only register that contains the version number of the RFM69
+
 
 
 
@@ -124,7 +138,10 @@
 //   - +20dBm requires toggling test registers 0x5A and 0x5C on every TX/RX switch
 //   - forgetting to reset test registers before RX can damage the chip
 //   - +20dBm only adds 7dB over +13dBm, negligible at these distances
-#define TX_POWER_13dBm 0x5F // PA1 on, PA2 off, OutputPower = 31 = +13dBm
+#define MY_TX_POWER 0x5F // PA1 on, PA2 off, OutputPower = 31 = +13dBm
+
+
+
 
 // ---------- Power Amplifier Ramp Register ----------
 #define REG_PARAMP           0x12  // PA ramp up time
@@ -137,7 +154,23 @@
 // Bits 7-4: reserved, always 0
 // Bits 3-0: PaRamp
 // default is 0000 1001 = 0x90 which is 40us ramp time according to datasheet. Seems like no compelling reason to change
-#define DEFAULT_PARAMP 0x09 // 40us ramp time
+#define MY_PARAMP 0x09 // 40us ramp time
+
+
+
+
+// ---------- Overcurrent Protection Register ----------
+#define REG_OCP              0x13
+// Controls the overcurrent protection (OCP) feature that shuts down the PA if current exceeds a certain limit to prevent damage
+// OCP is important to protect the radio, especially if you accidentally create a short circuit with your antenna or try to use too high of a power setting
+// Bits 7-5:    reserved, always 0
+// Bit 4:       OcpOn          enables overcurrent protection when set to 1, recommended to keep on
+// Bits 3-0:    OcpTrim        OCP current limit setting, value = (45 + 5 * OcpTrim) mA
+// OcpTrim default value is 0x1A, 95mA limit. just fine for us.
+#define MY_OCP 0x1A // OCP on, 95mA limit
+
+
+
 
 // ---------- RX Power / Low Noise Amplifier Register ----------
 #define REG_LNA             0x18  // RX gain
@@ -158,6 +191,9 @@
 //                             manually setting gain means radio cant adapt to varying signal strength
 #define MY_LNA_RX_POWER 0x00 // 50 ohm input impedance, AGC on
 
+
+
+
 // ---------- RX Bandwidth Register ----------
 #define REG_RXBW            0x19  // RX bandwidth
 // Controls the receiver channel filter bandwidth
@@ -171,19 +207,35 @@
 //           RxBw = F_osc(32MHz) / (RxBwMant * 2^(RxBwExp + 2))
 //
 // Rule: RxBw >= Fdev + (Bitrate / 2)
-// At 100kbps, 50kHz deviation: RxBw >= 50,000 + 50,000 = 100kHz minimum
-// (RxBwMant * 2^(RxBwExp + 2)) = 32M / 100k
-// (RxBwMant * 2^(RxBwExp + 2)) = 320
-// if RxBwMant = 20, then 2^(RxBwExp + 2) must equal 16 -> RxBwExp = 2
-// so REG_RXBW = 010 01 010 = 0100 1010 = 0x4A
-//
+// At 100kbps, 50kHz*2 deviation: RxBw >= 100,000 + 50,000 = 150kHz minimum
+// RxBwMant = 24 and RxBwExp = 1 gives us 32,000,000 / (24 * 2^(1+2)) =  32M / 24*8 = 166,667 Hz
+// rxbw = 010 10 001 = 0x51
 // Narrower = less noise but must be wide enough to capture your signal
 // Wider    = captures signal easily but lets in more noise
 // Must update this register if bitrate or deviation changes
 
 //Also worth knowing — there is a sister register 0x1A — RegAfcBw which sets the bandwidth used during automatic frequency correction at startup. It's recommended to set this slightly wider than RegRxBw, typically 1.5-2x:
 //crfm69_spi_write(0x1A, 0x42); // AFC bandwidth 200kHz, wider than RxBw for better AFC
+#define MY_RXBW 0x51 // Rx bandwidth 167kHz
 
+
+
+
+// ---------- Automatic Frequency Correction Bandwidth Register ----------
+#define REG_AFCBW           0x1A
+// Bits 7-5: DccFreq - DC cancellation filter cutoff frequency
+//           010 = default, leave here unless you have DC offset issues
+//
+// Bits 4-3: RxBwMant 00 = 16, 01 = 20, 10 = 24, 11 = reserved
+//
+// Bits 2-0: RxBwExp - exponent of bandwidth formula
+//           In FSK, RX bandwidth is:
+//           RxBw = F_osc(32MHz) / (RxBwMant * 2^(RxBwExp + 2))
+// Must always be wider than RegRxBw - gives AFC routine a larger window
+// to find and correct frequency offset between radios at receiver startup
+// RxBwMant=20, RxBwExp=1: 32MHz / (20 * 2^(1+2)) = 32MHz / 160 = 200kHz
+// my value should be 010 01 001 = 0x49
+#define MY_AFCBW 0x49 // AFC bandwidth 200kHz, wider than RxBw for better AFC
 
 
 // ==== INTERRUPTS / STATUS ====
@@ -192,23 +244,45 @@
 #define REG_IRQFLAGS2       0x28  // Packet sent / payload ready
 
 
-// ======= PACKET ENGINE =======
+// ---------- Preamble Registers ----------
 #define REG_PREAMBLEMSB     0x2C
 #define REG_PREAMBLELSB     0x2D
+// Sets the number of preamble bytes transmitted before the sync word
+// Preamble is an automatically generated alternating 1/0 pattern (0xAA or 0x55)
+// Purpose: gives the receiver AGC and clock recovery time to lock onto
+//          the signal before the sync word arrives
+// Hardware generates it automatically on TX and looks for it on RX
+// You only set the length, never touch the actual bytes
+//
+// Too short: receiver hasn't settled when sync word arrives, packet missed
+// Too long:  wastes airtime unnecessarily
+// Value is split across two bytes but you'll never need more than
+// 255 preamble bytes so MsByte will always be 0x00
+// Default is 3
+#define MY_PREAMBLE_LSB 0x04 
+#define MY_PREAMBLE_MSB 0x00
 
-// Sync Coniguration Register - determining the settings of the sync word
+
+// ---------- Sync Configuration Register ----------
 #define REG_SYNC_CONFIG     0x2E
 // Bit 7:    SyncOn          - 1 = enable sync word detection
 // Bit 6:    FifoFillCond    - 0 = fill FIFO when sync word matched, 1 = always fill
 // Bits 5-3: SyncSize        - sync word size in bytes, value = (bytes + 1), e.g. 001 = 2 bytes. 2 bytes is recommended, can do more if in a crowded 915MHz environment but it adds overhead
 // Bits 2-0: SyncTol         - number of bit errors allowed in sync word (0-7, recommend 0 or 1)
+#define MY_SYNC_CONFIG 0x98 // Sync on, 4 bytes sync word, 0 bit tolerance
 
-// Sync Word Registers - registers that hold the sync word bytes
+
+
+// ---------- Sync Word Registers ---------- 
+// Registers that hold the sync word bytes
 #define REG_SYNCVALUE1      0x2F 
 #define REG_SYNCVALUE2      0x30
 #define REG_SYNCVALUE3      0x31
 #define REG_SYNCVALUE4      0x32
 
+
+
+// ---------- Packet Configuration Register 1 ----------
 #define REG_PACKETCONFIG1   0x37
 // Controls packet engine behavior
 //
@@ -227,7 +301,17 @@
 // Bit 0:    reserved, always 0
 // reccomended value: 1001 0000 = 0x90 variable length packets, CRC on, discard bad packets, no address filtering
 
+
+
+// ---------- Payload Length Register ----------
 #define REG_PAYLOADLENGTH   0x38
+// In variable length mode: sets the MAXIMUM allowed packet length
+// Any packet whose length byte exceeds this value is discarded
+// In fixed length mode: sets the exact expected packet length
+#define MY_PAYLOAD_LENGTH 0x40 // 64 bytes, FIFO is 66 bytes, and one is used as the length byte
+
+
+// ---------- FIFO Threshold Register ----------
 #define REG_FIFOTHRESH      0x3C
 // Controls when transmission starts and the FIFO threshold level
 //
@@ -241,6 +325,7 @@
 //                              still used for RX to trigger FifoLevel interrupt
 //                              set to packet size - 1 as a reasonable default
 #define MY_FIFOTHRESH 0x80 // Transmit if fifo not empty, threshhold = 0
+
 
 // ---------- Packet Configuration Register 2 ----------
 #define REG_PACKETCONFIG2   0x3D
@@ -261,5 +346,3 @@
 // reccomended value: 0011 0010 = 0x32 InterPacketRxDelay 80us, auto RX restart on, AES encryption off
 
 
-// ======== SANITY CHECK ========
-#define REG_VERSION         0x10  // should read 0x24
