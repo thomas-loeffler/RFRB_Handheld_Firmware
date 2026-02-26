@@ -29,8 +29,8 @@
 #define MODE_SLEEP          0x00    // Almost everything off, 0.1uA draw, retains register values
 #define MODE_STANDBY        0x04    // Default state, use between packets and during configuration
 #define MODE_FREQUENCYSYNTH 0x08    // Frequency synthesizer running, neither TX nor RX active. Used for fast frequency hopping, not needed for this application
-#define MODE_TRANSMIT       0x0C    // Transmitting, switch to this mode when sending a packet
-#define MODE_RECEIVE        0x10    // Receiving, switch to this mode when listening for packets
+#define MODE_TX             0x0C    // Transmitting, switch to this mode when sending a packet
+#define MODE_RX             0x10    // Receiving, switch to this mode when listening for packets
 
 
 

@@ -128,31 +128,31 @@ void radio_setup(void) {
 void verify_radio_setup(void) {
     // read back and verify all configured registers are correct
 
-    uint8_t opmode = rfm69_spi_read(REG_OPMODE); //set mode to standby
+    uint8_t opmode = rfm69_spi_read(REG_OPMODE); 
 
-    uint8_t datamodul = rfm69_spi_read(REG_DATAMODUL); // Packet mode, FSK, no shaping
+    uint8_t datamodul = rfm69_spi_read(REG_DATAMODUL); 
 
-    uint8_t bitrate_msb = rfm69_spi_read(REG_BITRATEMSB); // 100kbps bitrate
+    uint8_t bitrate_msb = rfm69_spi_read(REG_BITRATEMSB); 
     uint8_t bitrate_lsb = rfm69_spi_read(REG_BITRATELSB);
 
-    uint8_t fdev_msb = rfm69_spi_read(REG_FDEVMSB); // 50kHz frequency deviation
+    uint8_t fdev_msb = rfm69_spi_read(REG_FDEVMSB); 
     uint8_t fdev_lsb = rfm69_spi_read(REG_FDEVLSB);
 
-    uint8_t frf_msb = rfm69_spi_read(REG_FRFMSB); // 915MHz frequency
+    uint8_t frf_msb = rfm69_spi_read(REG_FRFMSB); 
     uint8_t frf_mid = rfm69_spi_read(REG_FRFMID);
     uint8_t frf_lsb = rfm69_spi_read(REG_FRFLSB);
 
-    uint8_t palevel = rfm69_spi_read(REG_PALEVEL); // PA1 on, PA2 off, OutputPower = 31 = +13dBm
+    uint8_t palevel = rfm69_spi_read(REG_PALEVEL); 
 
-    uint8_t paramp = rfm69_spi_read(REG_PARAMP); // Default PA ramp-up time (40us)
+    uint8_t paramp = rfm69_spi_read(REG_PARAMP); 
 
-    uint8_t ocp = rfm69_spi_read(REG_OCP); // OCP on, 95mA limit
+    uint8_t ocp = rfm69_spi_read(REG_OCP); 
 
-    uint8_t lna = rfm69_spi_read(REG_LNA); // 50 ohm input impedance, ACG on
+    uint8_t lna = rfm69_spi_read(REG_LNA); 
 
-    uint8_t rxbw = rfm69_spi_read(REG_RXBW); // Rx bandwidth 167kHz
+    uint8_t rxbw = rfm69_spi_read(REG_RXBW); 
 
-    uint8_t afcbw = rfm69_spi_read(REG_AFCBW); // AFC bandwidth 200kHz, wider than RxBw for better AFC
+    uint8_t afcbw = rfm69_spi_read(REG_AFCBW); 
 
     uint8_t afcfei = rfm69_spi_read(REG_AFCFEI);
 
@@ -260,3 +260,53 @@ void verify_radio_setup(void) {
         printf("\nRadio setup FAILED\n \n");
     }
 }
+
+
+
+void rfm69_write_fifo(uint8_t *payload, uint8_t length) {
+    for (uint8_t i = 0; i < length; i++) {
+        rfm69_spi_write(REG_FIFO, payload[i]);
+    }
+}
+
+void rfm69_verify_fifo(uint8_t *payload, uint8_t length) {
+    // read back and verify - NOTE: reading FIFO is destructive
+    // bytes are consumed on read, FIFO will be empty after this function
+    // do not call this in normal TX flow, development verification only
+    bool success = true;
+    for (uint8_t i = 0; i < length; i++) {
+        uint8_t readback = rfm69_spi_read(REG_FIFO);
+        printf("FIFO[%d]: wrote 0x%02X  read 0x%02X  %s\n",
+            i, payload[i], readback,
+            payload[i] == readback ? "OK" : "FAIL");
+        if (payload[i] != readback) success = false;
+    }
+
+    printf(success ? "\nFIFO verify SUCCESSFUL\n\n" 
+                   : "\nFIFO verify FAILED\n\n");
+}
+
+
+void rfm69_set_standby(void) {
+    rfm69_spi_write(REG_OPMODE, MODE_STANDBY);
+}
+
+void rfm69_set_rx(void) {
+    rfm69_spi_write(REG_OPMODE, MODE_RX);
+}
+
+void rfm69_set_tx(void) {
+    rfm69_spi_write(REG_OPMODE, MODE_TX);
+}
+
+
+/* typical program flow:
+rfm69_set_standby();
+rfm69_write_fifo(payload, length);
+rfm69_set_tx();
+// wait for PacketSent on DIO0 or poll IrqFlags2
+rfm69_set_rx();
+*/
+
+// for the transmit irq, i could just poll that in the main loop, i dont think i would need an actual inturrupt routine,
+// becasue i would only set a flag thats read in the main loop that would just get proccessed anyway, its polling a flag or polling a pin... 
