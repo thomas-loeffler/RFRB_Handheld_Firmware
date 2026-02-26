@@ -90,25 +90,36 @@ void radio_setup(void) {
 
     rfm69_spi_write(REG_AFCBW, MY_AFCBW); // AFC bandwidth 200kHz, wider than RxBw for better AFC
 
+    rfm69_spi_write(REG_AFCFEI, MY_AFCFEI);
 
-    /*
+    rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PACKETSENT);
+    rfm69_spi_write(REG_DIOMAPPING2, MY_DIOMAPPING2);
+
+    rfm69_spi_write(REG_RSSITHRESH, MY_RSSITHRESH);
+
+    rfm69_spi_write(REG_RXTIMEOUT1, MY_RXTIMEOUT1);
+    rfm69_spi_write(REG_RXTIMEOUT2, MY_RXTIMEOUT2);
+
     rfm69_spi_write(REG_PREAMBLEMSB, MY_PREAMBLE_MSB);
     rfm69_spi_write(REG_PREAMBLELSB, MY_PREAMBLE_LSB); // 4 preamble bytes
 
+
+    
     rfm69_spi_write(REG_SYNC_CONFIG, MY_SYNC_CONFIG); // Sync on, 4 bytes sync word, 0 bit tolerance
 	rfm69_spi_write(REG_SYNCVALUE1, SYNC_WORD[0]);
 	rfm69_spi_write(REG_SYNCVALUE2, SYNC_WORD[1]);
 	rfm69_spi_write(REG_SYNCVALUE3, SYNC_WORD[2]);
 	rfm69_spi_write(REG_SYNCVALUE4, SYNC_WORD[3]);
 
-    rfm69_spi_write(REG_PACKETCONFIG1, 0x90); // Fixed length packets, CRC on, discard bad packets, no address filtering
+    rfm69_spi_write(REG_PACKETCONFIG1, MY_PACKETCONFIG1); // Fixed length packets, CRC on, discard bad packets, no address filtering
 
     rfm69_spi_write(REG_PAYLOADLENGTH, MY_PAYLOAD_LENGTH); // Maximum packet length 64 bytes
 
     rfm69_spi_write(REG_FIFOTHRESH, MY_FIFOTHRESH); // Transmit if fifo not empty, threshhold = 0
 
-    rfm69_spi_write(REG_PACKETCONFIG2, 0x32); //InterPacketRxDelay 80us, auto RX restart on, AES encryption off
-    */
+    rfm69_spi_write(REG_PACKETCONFIG2, MY_PACKETCONFIG2); //InterPacketRxDelay 80us, auto RX restart on, AES encryption off
+
+    rfm69_spi_write(REG_TESTDAGC, MY_TESTDAGC);
 
 
 }
@@ -143,25 +154,73 @@ void verify_radio_setup(void) {
 
     uint8_t afcbw = rfm69_spi_read(REG_AFCBW); // AFC bandwidth 200kHz, wider than RxBw for better AFC
 
+    uint8_t afcfei = rfm69_spi_read(REG_AFCFEI);
 
+    uint8_t diomap1 = rfm69_spi_read(REG_DIOMAPPING1);
+    uint8_t diomap2 = rfm69_spi_read(REG_DIOMAPPING2);
 
+    uint8_t rssithresh = rfm69_spi_read(REG_RSSITHRESH);
 
-    printf("OPMODE      : 0x%02X\n", opmode);
-    printf("DATAMODUL   : 0x%02X\n", datamodul);
-    printf("BITRATE MSB : 0x%02X\n", bitrate_msb);
-    printf("BITRATE LSB : 0x%02X\n", bitrate_lsb);
-    printf("FDEV MSB    : 0x%02X\n", fdev_msb);
-    printf("FDEV LSB    : 0x%02X\n", fdev_lsb);
-    printf("FRF MSB     : 0x%02X\n", frf_msb);
-    printf("FRF MID     : 0x%02X\n", frf_mid);
-    printf("FRF LSB     : 0x%02X\n", frf_lsb);
-    printf("PALEVEL     : 0x%02X\n", palevel);
-    printf("PARAMP      : 0x%02X\n", paramp);
-    printf("OCP         : 0x%02X\n", ocp);
-    printf("LNA         : 0x%02X\n", lna);
-    printf("RXBW        : 0x%02X\n", rxbw);
-    printf("AFCBW       : 0x%02X\n", afcbw);
+    uint8_t rxtimeout1 = rfm69_spi_read(REG_RXTIMEOUT1);
+    uint8_t rxtimeout2 = rfm69_spi_read(REG_RXTIMEOUT2);
+
+    uint8_t preamblemsb = rfm69_spi_read(REG_PREAMBLEMSB);
+    uint8_t preamblelsb = rfm69_spi_read(REG_PREAMBLELSB);
+
+    uint8_t syncconfig = rfm69_spi_read(REG_SYNC_CONFIG);
+
+    uint8_t syncvalue1 = rfm69_spi_read(REG_SYNCVALUE1);
+    uint8_t syncvalue2 = rfm69_spi_read(REG_SYNCVALUE2);
+    uint8_t syncvalue3 = rfm69_spi_read(REG_SYNCVALUE3);
+    uint8_t syncvalue4 = rfm69_spi_read(REG_SYNCVALUE4);
+
+    uint8_t packetcfg1 = rfm69_spi_read(REG_PACKETCONFIG1);
     
+    uint8_t payloadlen = rfm69_spi_read(REG_PAYLOADLENGTH);
+
+    uint8_t fifothresh = rfm69_spi_read(REG_FIFOTHRESH);
+
+    uint8_t packetcfg2 = rfm69_spi_read(REG_PACKETCONFIG2);
+
+    uint8_t testdagc = rfm69_spi_read(REG_TESTDAGC);
+
+
+
+    printf("REG OPMODE      : 0x%02X   Expected : 0x04\n", opmode);
+    printf("REG DATAMODUL   : 0x%02X   Expected : 0x00\n", datamodul);
+    printf("REG BITRATE MSB : 0x%02X   Expected : 0x01\n", bitrate_msb);
+    printf("REG BITRATE LSB : 0x%02X   Expected : 0x40\n", bitrate_lsb);
+    printf("REG FDEV MSB    : 0x%02X   Expected : 0x03\n", fdev_msb);
+    printf("REG FDEV LSB    : 0x%02X   Expected : 0x33\n", fdev_lsb);
+    printf("REG FRF MSB     : 0x%02X   Expected : 0xE4\n", frf_msb);
+    printf("REG FRF MID     : 0x%02X   Expected : 0xC0\n", frf_mid);
+    printf("REG FRF LSB     : 0x%02X   Expected : 0x00\n", frf_lsb);
+    printf("REG PALEVEL     : 0x%02X   Expected : 0x5F\n", palevel);
+    printf("REG PARAMP      : 0x%02X   Expected : 0x09\n", paramp);
+    printf("REG OCP         : 0x%02X   Expected : 0x1A\n", ocp);
+    printf("REG LNA         : 0x%02X   Expected : 0b00XXX000 (unknown read only bits)\n", lna);
+    printf("REG RXBW        : 0x%02X   Expected : 0x51\n", rxbw);
+    printf("REG AFCBW       : 0x%02X   Expected : 0x49\n", afcbw);
+    printf("REG AFCFEI      : 0x%02X   Expected : 0b000X1000 (unknown read only bit)\n", afcfei);
+    printf("REG DIOMAPPING1 : 0x%02X   Expected : 0x00\n", diomap1);
+    printf("REG DIOMAPPING2 : 0x%02X   Expected : 0x07\n", diomap2);
+    printf("REG RSSITHRESH  : 0x%02X   Expected : 0xE4\n", rssithresh);
+    printf("REG RXTIMEOUT1  : 0x%02X   Expected : 0x00\n", rxtimeout1);
+    printf("REG RXTIMEOUT2  : 0x%02X   Expected : 0x00\n", rxtimeout2);
+    printf("REG PREAMBLEMSB : 0x%02X   Expected : 0x00\n", preamblemsb);
+    printf("REG PREAMBLELSB : 0x%02X   Expected : 0x04\n", preamblelsb);
+    printf("REG SYNC_CONFIG : 0x%02X   Expected : 0x98\n", syncconfig);
+    printf("REG SYNCVALUE1  : 0x%02X   Expected : 0xCA\n", syncvalue1);
+    printf("REG SYNCVALUE2  : 0x%02X   Expected : 0xFE\n", syncvalue2);
+    printf("REG SYNCVALUE3  : 0x%02X   Expected : 0xBA\n", syncvalue3);
+    printf("REG SYNCVALUE4  : 0x%02X   Expected : 0xBE\n", syncvalue4);
+    printf("REG PACKETCFG1  : 0x%02X   Expected : 0x90\n", packetcfg1);
+    printf("REG PAYLOADLEN  : 0x%02X   Expected : 0x40\n", payloadlen);
+    printf("REG FIFOTHRESH  : 0x%02X   Expected : 0x80\n", fifothresh);
+    printf("REG PACKETCFG2  : 0x%02X   Expected : 0x32\n", packetcfg2);
+    printf("REG TESTDAGC    : 0x%02X   Expected : 0x30\n", testdagc);
+
+
 
 	if (opmode      == 0x04 &&
         datamodul   == 0x00 &&
@@ -175,9 +234,27 @@ void verify_radio_setup(void) {
         palevel     == 0x5F &&
         paramp      == 0x09 &&
         ocp         == 0x1A &&
-        lna         == 0x00 &&
+        (lna & 0xC7)        == 0x00 && // Bits 5-3 are read only (LnaCurrentGain) will most likley read 001. Masking those out
         rxbw        == 0x51 &&
-        afcbw       == 0x49) {
+        afcbw       == 0x49 &&
+        (afcfei & 0xEF)     == 0x04 && // Bit 4 is read only (AFCDone), will most likley read 1 (AFC is not ongoing/has finished). Masking that out
+        diomap1     == 0x00 &&
+        diomap2     == 0x07 &&
+        rssithresh  == 0xE4 &&
+        rxtimeout1  == 0x00 &&
+        rxtimeout2  == 0x00 &&
+        preamblemsb == 0x00 &&
+        preamblelsb == 0x04 &&
+        syncconfig  == 0x98 &&
+        syncvalue1  == 0xCA &&
+        syncvalue2  == 0xFE &&
+        syncvalue3  == 0xBA &&
+        syncvalue4  == 0xBE &&
+        packetcfg1  == 0x90 &&
+        payloadlen  == 0x40 &&
+        fifothresh  == 0x80 &&
+        packetcfg2  == 0x32 &&
+        testdagc    == 0x30) {
         printf("\nRadio setup SUCCESSFUL!\n \n");
     } else {
         printf("\nRadio setup FAILED\n \n");

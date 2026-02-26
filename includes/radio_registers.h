@@ -127,11 +127,11 @@
 // Bit 7:    Pa0_On        - 0 = off, RFIO pin not connected on Adafruit breakout
 // Bit 6:    Pa1_On        - 1 = on,  PA1 on PA_BOOST pin
 // Bit 5:    Pa2_On        - 0 = off, not needed, +13dBm is sufficient for 200ft
-// Bits 4-0: OutputPower  - power level 0-31
-//                          Pout formula depends on PA combination:
-//                          PA1 only:          Pout = -18 + OutputPower (-2  to +13 dBm)
-//                          PA1 + PA2:         Pout = -14 + OutputPower (+2  to +17 dBm)
-//                          PA1 + PA2 + high:  Pout = -11 + OutputPower (+5  to +20 dBm)
+// Bits 4-0: OutputPower   - power level 0-31
+//                           Pout formula depends on PA combination:
+//                           PA1 only:          Pout = -18 + OutputPower (-2  to +13 dBm)
+//                           PA1 + PA2:         Pout = -14 + OutputPower (+2  to +17 dBm)
+//                           PA1 + PA2 + high:  Pout = -11 + OutputPower (+5  to +20 dBm)
 //
 // Selected: PA1 only, OutputPower = 31 → -18 + 31 = +13dBm
 // +13dBm chosen over +20dBm because:
@@ -214,8 +214,9 @@
 // Wider    = captures signal easily but lets in more noise
 // Must update this register if bitrate or deviation changes
 
-//Also worth knowing — there is a sister register 0x1A — RegAfcBw which sets the bandwidth used during automatic frequency correction at startup. It's recommended to set this slightly wider than RegRxBw, typically 1.5-2x:
-//crfm69_spi_write(0x1A, 0x42); // AFC bandwidth 200kHz, wider than RxBw for better AFC
+// Also worth knowing — there is a sister register 0x1A — RegAfcBw which sets the bandwidth used during automatic frequency correction at startup. 
+// It's recommended to set this slightly wider than RegRxBw, typically 1.5-2x:
+
 #define MY_RXBW 0x51 // Rx bandwidth 167kHz
 
 
@@ -238,10 +239,95 @@
 #define MY_AFCBW 0x49 // AFC bandwidth 200kHz, wider than RxBw for better AFC
 
 
-// ==== INTERRUPTS / STATUS ====
-#define REG_DIOMAPPING1     0x25  // Map IRQ to DIO0
-#define REG_IRQFLAGS1       0x27  // Mode ready etc
-#define REG_IRQFLAGS2       0x28  // Packet sent / payload ready
+
+#define REG_AFCFEI 0x1E
+// AFC = Automatic Frequency Correction - measures AND corrects frequency offset
+// FEI = Frequency Error Indicator      - measures and REPORTS offset only, no correction
+//
+// Bit 7: reserved
+// Bit 6: FeiDone        - READ ONLY, 1 = FEI measurement complete and result is ready
+//                         poll this before reading RegFeiMsb/Lsb
+// Bit 5: FeiStart       - write 1 to trigger a FEI measurement
+//                         always reads back 0, one shot trigger. Useful for diagnostics to see how much your crystals are drifting
+// Bit 4: AfcDone        - READ ONLY, 1 = AFC measurement complete
+//                         you can poll this to confirm AFC finished before data arrives. Not really important since hardware already handles it
+// Bit 3: AfcAutoClear   - 1 = AFC register cleared before each new AFC measurement
+//                         0 = AFC result from previous packet is kept as starting point 
+//                         (leave at default 0, keeping previous result helps in stable links. plus we are using the same to registers so the drift should be consistent)
+// Bit 2: AfcAutoOn      - 1 = AFC runs automatically at receiver startup during preamble (definitly want this)
+//                         0 = AFC only runs when manually triggered by AfcStart
+// Bit 1: AfcClear       - write 1 to manually clear the AFC register
+//                         always reads back 0, one shot trigger
+//                         (probably wont need since our AFC should be the same most of the time. see note on bit 3)
+// Bit 0: AfcStart       - write 1 to manually trigger an AFC measurement
+//                         always reads back 0, one shot trigger
+//                         (not needed since AFCauto is on)
+#define MY_AFCFEI 0x04
+
+
+
+// ---------- Digital I/O Mapping Register 1 ----------
+#define REG_DIOMAPPING1     0x25 
+// Controls DIO0 - DIO3
+// Bits 7-6: Dio0 Mapping     - 00 -> CRCOk (in RX mode) and Packet Sent (in TX mode)
+//                            - 01 -> Payload Ready (in RX mode) and TXready (in TX mode)
+// Bits 5-4: Dio1 Mapping     - 00 not needed but have to map
+// Bits 3-2: Dio2 Mapping     - 00 not needed but have to map
+// Bits 1-0: Dio3 Mapping     - 00 not needed but have to map
+#define MY_DIOMAPPING1_PACKETSENT 0x00
+#define MY_DIOMAPPING1_PAYLOADREADY 0x40
+
+
+
+
+
+// ---------- Digital I/O Mapping Register 1 ----------
+#define REG_DIOMAPPING2     0x26
+// Controls DIO4, DIO5, and the ClkOut frequency on DIO5
+// Bits 7-6: DIO4 mapping     - 00 - not connected 
+// Bits 5-4: DIO5 mapping     - 00 - not connected
+// Bit 3:    reserved
+// Bits 2-0: ClkOut           - clock output frequency available on DIO5 
+//                              111 = OFF disable to save power when not needed
+//                              datasheet explicitly recommends disabling ClkOut when not in use
+#define MY_DIOMAPPING2 0x07
+
+
+#define REG_IRQFLAGS1       0x27  // Read only flags register (no relevant flags)
+#define REG_IRQFLAGS2       0x28  // Read only flags register (packet sent / payload ready)
+
+
+// ---------- RSSI (Received Signal Strength Indicator) Threshold REgister ----------
+#define REG_RSSITHRESH 0x29
+// Minimum signal strength required before receiver starts AGC and sync word detection
+// Radio sits in WAIT state ignoring everything below this threshold
+// Formula: threshold_dBm = -(RegRssiThresh / 2)
+// Reset value 0xFF = -127.5 dBm, too close to noise floor, AGC triggers on noise
+// Recommended 0xE4 = -114 dBm, just above noise floor
+// Set too low: AGC triggers on noise constantly, wastes time, false sync searches
+// Set too high: might miss weak legitimate signals at the edge of range
+#define MY_RSSITHRESH 0xE4
+
+
+
+// ---------- RX Timeout 1 Register ----------
+#define REG_RXTIMEOUT1      0x2A
+// Timeout duration between entering RX mode and RSSI threshold being detected
+// If no signal above RssiThreshold is detected within this time, Timeout interrupt fires
+// 0x00 = disabled, radio waits indefinitely for a signal (recommended)
+#define MY_RXTIMEOUT1       0x00  // disabled, software timeout used instead
+
+
+
+
+// ---------- RX Timeout 2 Register ----------
+#define REG_RXTIMEOUT2      0x2B
+// Timeout duration between RSSI threshold being detected and PayloadReady
+// If sync word and payload are not received within this time, Timeout interrupt fires
+// 0x00 = disabled, radio waits indefinitely for payload after RSSI detect (recommended)
+#define MY_RXTIMEOUT2       0x00  // disabled, software timeout used instead
+
+
 
 
 // ---------- Preamble Registers ----------
@@ -256,18 +342,19 @@
 //
 // Too short: receiver hasn't settled when sync word arrives, packet missed
 // Too long:  wastes airtime unnecessarily
-// Value is split across two bytes but you'll never need more than
-// 255 preamble bytes so MsByte will always be 0x00
+// Value is split across two bytes but you'll never need more than 255 preamble bytes so MsByte will always be 0x00
 // Default is 3
-#define MY_PREAMBLE_LSB 0x04 
 #define MY_PREAMBLE_MSB 0x00
+#define MY_PREAMBLE_LSB 0x04 
+
 
 
 // ---------- Sync Configuration Register ----------
 #define REG_SYNC_CONFIG     0x2E
 // Bit 7:    SyncOn          - 1 = enable sync word detection
 // Bit 6:    FifoFillCond    - 0 = fill FIFO when sync word matched, 1 = always fill
-// Bits 5-3: SyncSize        - sync word size in bytes, value = (bytes + 1), e.g. 001 = 2 bytes. 2 bytes is recommended, can do more if in a crowded 915MHz environment but it adds overhead
+// Bits 5-3: SyncSize        - sync word size in bytes, value = (bytes + 1), e.g. 011 = 4 bytes. 
+//.                            2 bytes is recommended, can do more if in a crowded 915MHz environment but it adds overhead
 // Bits 2-0: SyncTol         - number of bit errors allowed in sync word (0-7, recommend 0 or 1)
 #define MY_SYNC_CONFIG 0x98 // Sync on, 4 bytes sync word, 0 bit tolerance
 
@@ -275,6 +362,7 @@
 
 // ---------- Sync Word Registers ---------- 
 // Registers that hold the sync word bytes
+// Our set sync word = 0xCAFEBABE
 #define REG_SYNCVALUE1      0x2F 
 #define REG_SYNCVALUE2      0x30
 #define REG_SYNCVALUE3      0x31
@@ -300,6 +388,7 @@
 //                               10 = match node or broadcast address
 // Bit 0:    reserved, always 0
 // reccomended value: 1001 0000 = 0x90 variable length packets, CRC on, discard bad packets, no address filtering
+#define MY_PACKETCONFIG1 0x90
 
 
 
@@ -311,11 +400,13 @@
 #define MY_PAYLOAD_LENGTH 0x40 // 64 bytes, FIFO is 66 bytes, and one is used as the length byte
 
 
+
+
 // ---------- FIFO Threshold Register ----------
 #define REG_FIFOTHRESH      0x3C
 // Controls when transmission starts and the FIFO threshold level
 //
-// Bit 7:    TxStartCondition - what triggers the radio to start transmitting (when in TX mode)
+// Bit 7: TxStartCondition    - what triggers the radio to start transmitting (when in TX mode)
 //                              0 = start TX when FIFO threshold is exceeded
 //                              1 = start TX when there is at least 1 byte in FIFO (FifoNotEmpty) (do this option, becasue when switching to tx the payload should be ready)
 // Bits 6-0: FifoThreshold    - number of bytes that must be in FIFO before FifoLevel
@@ -324,14 +415,17 @@
 //                              with TxStartCondition = 1 this value is ignored for TX
 //                              still used for RX to trigger FifoLevel interrupt
 //                              set to packet size - 1 as a reasonable default
-#define MY_FIFOTHRESH 0x80 // Transmit if fifo not empty, threshhold = 0
+#define MY_FIFOTHRESH 0x80 // Transmit if fifo not empty, threshold = 0
+
+
 
 
 // ---------- Packet Configuration Register 2 ----------
 #define REG_PACKETCONFIG2   0x3D
 // Additional packet engine controls
 //
-// Bits 7-4: InterPacketRxDelay - delay between packet received and receiver restart. (after you've finished reading the last packet from the fifo(fifo clear), wait this long before hunting for the next one.)
+// Bits 7-4: InterPacketRxDelay - delay between packet received and receiver restart. 
+//                                (after you've finished reading the last packet from the fifo(fifo clear), wait this long before hunting for the next one.)
 //                                value = 2^(InterPacketRxDelay) / bitrate
 //                                value = 2^(InterPacketRxDelay) / 100,000 
 //                                0011 = 2^3 / 100,000 = 80us, double PA ramp time to be safe
@@ -344,5 +438,21 @@
 // Bit 0:    AesOn              - 0 = AES encryption off (keep off for now, can add later)
 //                                1 = AES encryption on 
 // reccomended value: 0011 0010 = 0x32 InterPacketRxDelay 80us, auto RX restart on, AES encryption off
+#define MY_PACKETCONFIG2 0x32
 
+
+// ---------- Digital Automatic Gain Control ----------
+#define REG_TESTDAGC        0x6F
+// Improves receiver performance in fading conditions by continuously
+// adjusting digital gain every 2 bits throughout packet reception
+// Works in addition to the analog AGC (RegLna) - fully transparent to your code (you dont need to do anything to it, set it and forget it)
+//
+// 0x00 = default, DAGC off
+// 0x20 = DAGC on, recommended for low modulation index (AfcLowBetaOn=1)
+// 0x30 = DAGC on, recommended for normal modulation index (our case)
+//
+// Datasheet explicitly recommends always enabling DAGC
+// Free improvement to RX reliability in a noisy gym environment
+// No downside to enabling it
+#define MY_TESTDAGC         0x30  // DAGC on, normal modulation index
 

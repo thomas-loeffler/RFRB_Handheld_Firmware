@@ -57,8 +57,13 @@ void main(void){
 	display_trine_logo(); // Show the Trine logo on the display at startup
 	
 
-	radio_setup();
 	sleep_ms(5000);
+
+	verify_radio_setup();
+
+	sleep_ms(5000);
+	
+	radio_setup();
 	verify_radio_setup();
 	
 	
