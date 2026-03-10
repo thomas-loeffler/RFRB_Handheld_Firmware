@@ -53,7 +53,7 @@ void radio_reset(void) {
 
 // Debugging function
 void check_version(void) {
-    uint8_t version = rfm69_spi_read(0x10); // RegVersion
+    uint8_t version = rfm69_spi_read(REG_VERSION); 
     printf("RFM69 version: 0x%02X\n", version);
     if (version != 0x24) {
         printf("SPI communication failed!\n");
@@ -264,6 +264,7 @@ void verify_radio_setup(void) {
 
 
 void rfm69_write_fifo(uint8_t *payload, uint8_t length) {
+    rfm69_spi_write(REG_FIFO, length);
     for (uint8_t i = 0; i < length; i++) {
         rfm69_spi_write(REG_FIFO, payload[i]);
     }

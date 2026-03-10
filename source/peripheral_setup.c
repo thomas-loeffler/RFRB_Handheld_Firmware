@@ -34,7 +34,16 @@ void GPIO_setup(void) {
     // Initialize the simple cycle pin as an output and set high to start
     gpio_init(CYCLE); // GP0 / physical pin 1
     gpio_set_dir(CYCLE, GPIO_OUT);
-    gpio_put(CYCLE, 1);  
+    gpio_put(CYCLE, 0);  
+
+    // ---------- Test Input Pin ----------
+    // Pin for various tests
+    gpio_init(TEST); // GP28 / physical pin 34
+    gpio_set_dir(TEST, GPIO_IN);
+    gpio_pull_down(TEST); // normally grounded, triggers when sent high
+    
+
+
 
 
     // ---------- DIP Switches ----------

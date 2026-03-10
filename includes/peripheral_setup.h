@@ -38,6 +38,10 @@ extern volatile bool radio_event;
 #define CYCLE 0 // GP0 / physical pin 1
 
 
+// ====== Test Input Pin ======
+#define TEST 28 // GP28 / physical pin 34
+
+
 // ============ I2C ============
 #define I2C_SDA 4 // GP4 / physical pin 6
 #define I2C_SCL 5 // GP5 / physical pin 7
