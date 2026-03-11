@@ -43,7 +43,7 @@ uint8_t rfm69_spi_read(uint8_t reg) {
 
 
 // Shouldn't need to reset the radio on every boot, but this is useful for testing and ensures a known state
-void radio_reset(void) {
+void rfm69_reset(void) {
     gpio_put(RADIO_RST, 1);
     sleep_ms(1); // Datasheet specifies at least 100us high, so 1ms is plenty
     gpio_put(RADIO_RST, 0);
@@ -52,7 +52,7 @@ void radio_reset(void) {
 
 
 // Debugging function
-void check_version(void) {
+void rfm69_check_version(void) {
     uint8_t version = rfm69_spi_read(REG_VERSION); 
     printf("RFM69 version: 0x%02X\n", version);
     if (version != 0x24) {
@@ -62,7 +62,7 @@ void check_version(void) {
     }
 }
 
-void radio_setup(void) {
+void rfm69_setup(void) {
 
     rfm69_spi_write(REG_OPMODE, MODE_STANDBY); // Set to standby mode (if not already) to allow writing to registers
 
@@ -125,7 +125,7 @@ void radio_setup(void) {
 }
 
 
-void verify_radio_setup(void) {
+void rfm69_verify_setup(void) {
     // read back and verify all configured registers are correct
 
     uint8_t opmode = rfm69_spi_read(REG_OPMODE); 
@@ -298,6 +298,14 @@ void rfm69_set_rx(void) {
 
 void rfm69_set_tx(void) {
     rfm69_spi_write(REG_OPMODE, MODE_TX);
+}
+
+void rfm69_set_G0_packet_sent(){
+    rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PACKETSENT);
+}
+
+void rfm69_set_G0_packet_received(){
+    rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PAYLOADREADY);
 }
 
 
