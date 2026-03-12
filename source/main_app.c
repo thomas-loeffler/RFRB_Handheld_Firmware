@@ -20,9 +20,16 @@
 #include "display_functions.h" // for the I2C display
 #include "radio_functions.h" // for the RFM69 radio functions
 #include "radio_registers.h" // for the RFM69 register definitions
+#include "mechanum_functions.h"
 
 
+uint8_t extract_ds4_lx(struct bt_hid_state* ds4_state){
+    return ds4_state -> lx;
+}
 
+uint8_t extract_ds4_ly(struct bt_hid_state* ds4_state){
+    return ds4_state -> ly;
+}
 
 //////////////////////////////////////
 //           MAIN FUNCTION          //
@@ -63,26 +70,31 @@ void main(void){
 	
 	uint8_t payload[8] = {0x01, 0x02, 0xDE, 0xAD, 0xBE, 0xEF, 0x03, 0x04};
 	
-	
+	uint8_t raw_x;
+	uint8_t raw_y;
+
+	float fl;
+	float fr;
+    float bl;
+	float br;
 
 	
 	while (1) {
 
 		//gpio_put(CYCLE, !gpio_get(CYCLE)); // Toggle the simple cycle pin for debugging purposes
 
+
 		bt_hid_get_latest(&ds4_state); // Aquire latest Bluetooth controller state
 
-		sleep_ms(1000);
+		raw_x = extract_ds4_lx(&ds4_state);
+		raw_y = extract_ds4_ly(&ds4_state);
 
-
-		rfm69_write_fifo(payload, 8);
-		rfm69_set_tx();
-		while(!gpio_get(RADIO_IRQ)){}
-		sleep_ms(10);
-		rfm69_set_standby();
-
-
+		mechanum_driver(raw_x, raw_y, &fl, &fr, &bl, &br);
 		
+
+		mecanum_resultant_TEST(fl, fr, bl, br);
+
+		sleep_ms(100);
 
 	}
 }
@@ -98,33 +110,10 @@ void main(void){
 		uint8_t dip_3 = !gpio_get(DIP3);
 		uint8_t dip_4 = !gpio_get(DIP4);
 */
-
-
-
 /*
-typedef struct {
-    float x;
-    float y;
-} dir_vect;
-
-dir_vect dv;
-
-void normalize_input(uint8_t raw_x, uint8_t raw_y) {
-    dv.x = ((float)raw_x - 127.5f) / 127.5f;
-    dv.y = ((float)raw_y - 127.5f) / 127.5f;
-}
-
-void apply_deadzone() {
-    if (dv.x < 0.2f){
-		dv.x = 0;
-	}
-	if (dv.y < 0.2f){
-		dv.y = 0;
-	}
-}
+rfm69_write_fifo(payload, 8);
+rfm69_set_tx();
+while(!gpio_get(RADIO_IRQ)){}
+rfm69_set_rx();
 */
-
-
-
-
 
