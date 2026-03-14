@@ -22,6 +22,8 @@
 #include "radio_registers.h" // for the RFM69 register definitions
 #include "mechanum_functions.h"
 
+extern volatile bool radio_event;
+
 
 uint8_t extract_ds4_lx(struct bt_hid_state* ds4_state){
     return ds4_state -> lx;
@@ -83,7 +85,14 @@ void main(void){
 
 		//gpio_put(CYCLE, !gpio_get(CYCLE)); // Toggle the simple cycle pin for debugging purposes
 
+		
+		if(radio_event){
+			printf("Radio Event\n");
+			radio_event = false;
+		}
+		
 
+		/*
 		bt_hid_get_latest(&ds4_state); // Aquire latest Bluetooth controller state
 
 		raw_x = extract_ds4_lx(&ds4_state);
@@ -93,8 +102,15 @@ void main(void){
 		
 
 		mecanum_resultant_TEST(fl, fr, bl, br);
+		*/
+		rfm69_set_standby();
+		rfm69_write_fifo(payload, 8);
+		rfm69_set_tx();
+		sleep_ms(2);
+		rfm69_set_rx();
 
-		sleep_ms(100);
+
+		sleep_ms(1000);
 
 	}
 }

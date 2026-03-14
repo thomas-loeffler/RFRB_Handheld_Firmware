@@ -354,7 +354,7 @@
 // Bit 7:    SyncOn          - 1 = enable sync word detection
 // Bit 6:    FifoFillCond    - 0 = fill FIFO when sync word matched, 1 = always fill
 // Bits 5-3: SyncSize        - sync word size in bytes, value = (bytes + 1), e.g. 011 = 4 bytes. 
-//.                            2 bytes is recommended, can do more if in a crowded 915MHz environment but it adds overhead
+//                            2 bytes is recommended, can do more if in a crowded 915MHz environment but it adds overhead
 // Bits 2-0: SyncTol         - number of bit errors allowed in sync word (0-7, recommend 0 or 1)
 #define MY_SYNC_CONFIG 0x98 // Sync on, 4 bytes sync word, 0 bit tolerance
 
