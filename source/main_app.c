@@ -70,7 +70,7 @@ void main(void){
 	rfm69_set_standby();
 
 	
-	uint8_t payload[8] = {0x01, 0x02, 0xDE, 0xAD, 0xBE, 0xEF, 0x03, 0x04};
+	uint8_t payload[4] = {0xDE, 0xAD, 0xBE, 0xEF};
 	
 	uint8_t raw_x;
 	uint8_t raw_y;
@@ -87,28 +87,46 @@ void main(void){
 
 		
 		if(radio_event){
+			// read fifo
+			// update robot connected varaible
+			// update rssi varaible
+			// update battery voltage varaible
+			// update packeet loss variable 
 			printf("Radio Event\n");
 			radio_event = false;
 		}
 		
 
-		/*
+		
 		bt_hid_get_latest(&ds4_state); // Aquire latest Bluetooth controller state
 
 		raw_x = extract_ds4_lx(&ds4_state);
 		raw_y = extract_ds4_ly(&ds4_state);
 
 		mechanum_driver(raw_x, raw_y, &fl, &fr, &bl, &br);
-		
 
-		mecanum_resultant_TEST(fl, fr, bl, br);
-		*/
+		packet_packing(fl, fr, bl, br, payload);
+
+		
 		rfm69_set_standby();
-		rfm69_write_fifo(payload, 8);
+		rfm69_write_fifo(payload, 4);
 		rfm69_set_tx();
 		sleep_ms(2);
+		/* OR
+		// Wait for TX complete
+		while (!(rfm69_spi_read(REG_IRQFLAGS2) & 0x08)) {
+			; // busy-wait, or optionally do other small tasks
+			// maybe even add a timeout
+		}
+		*/
 		rfm69_set_rx();
 
+		
+		// heartbeat every 500ms? 200ms probably better
+		// transmitting rssi, battery level, packet loss?
+		// packet loss can be me counting how many packets i send between heartbeats, 
+		// and the receiver can count hpw many they received then compare the difference
+		//if have missed 3 or more heart beats say something
 
 		sleep_ms(1000);
 
@@ -125,11 +143,5 @@ void main(void){
 		uint8_t dip_2 = !gpio_get(DIP2);
 		uint8_t dip_3 = !gpio_get(DIP3);
 		uint8_t dip_4 = !gpio_get(DIP4);
-*/
-/*
-rfm69_write_fifo(payload, 8);
-rfm69_set_tx();
-while(!gpio_get(RADIO_IRQ)){}
-rfm69_set_rx();
 */
 

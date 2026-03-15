@@ -11,6 +11,7 @@
 #include <math.h>
 
 #define COS_45 0.70710678f
+#define MOTOR_SCALING 12
 
 
 /*
@@ -105,6 +106,33 @@ void mechanum_driver(uint8_t raw_x, uint8_t raw_y,
     //printf("norm_x = %.2f    norm_y = %.2f  ", norm_x, norm_y);
     //printf("FL = %.2f   FR = %.2f   BL = %.2f   BR = %.2f   ", *fl, *fr, *bl, *br);
 }
+
+
+// Helper function. Faster rounding than roundf()
+int8_t round_and_cast(float x){
+    if (x > 0) {x += 0.5f;}
+    else {x -= 0.5f;}
+    return (int8_t)x;
+}
+
+
+
+void packet_packing(float fl, float fr, float bl, float br, uint8_t *payload){
+    
+    // Rounding to nearest whole number then casting to an integer
+    int8_t fl_scaled = round_and_cast(fl * MOTOR_SCALING); 
+    int8_t fr_scaled = round_and_cast(fr * MOTOR_SCALING); 
+    int8_t bl_scaled = round_and_cast(bl * MOTOR_SCALING); 
+    int8_t br_scaled = round_and_cast(br * MOTOR_SCALING); 
+    
+
+    // Casting to a uint for SPI and radio unit. Need to interpret correctly on receiving end
+    payload[0] = (uint8_t)fl_scaled; 
+    payload[1] = (uint8_t)fr_scaled;
+    payload[2] = (uint8_t)bl_scaled;
+    payload[3] = (uint8_t)br_scaled;
+}
+
 
 
 

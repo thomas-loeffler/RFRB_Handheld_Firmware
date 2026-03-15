@@ -264,9 +264,9 @@ void rfm69_verify_setup(void) {
 
 
 void rfm69_write_fifo(uint8_t *payload, uint8_t length) {
-    rfm69_spi_write(REG_FIFO, length);
+    rfm69_spi_write(REG_FIFO, length); // writing the length as the first byte
     for (uint8_t i = 0; i < length; i++) {
-        rfm69_spi_write(REG_FIFO, payload[i]);
+        rfm69_spi_write(REG_FIFO, payload[i]); // then writing the rest of the data
     }
 }
 
