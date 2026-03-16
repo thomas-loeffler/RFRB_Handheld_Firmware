@@ -125,7 +125,7 @@ void radio_irq_setup(void) {
 
     gpio_init(RADIO_IRQ); // GP21 / physical pin 27
     gpio_set_dir(RADIO_IRQ, GPIO_IN);
-    gpio_pull_down(RADIO_IRQ);  // So pin is typically low until radio asserts it high for irq
+    // dont need pull down becaseu radio outs are push pull
 
     gpio_set_irq_enabled_with_callback(
         RADIO_IRQ,          // GP21 / physical pin 27

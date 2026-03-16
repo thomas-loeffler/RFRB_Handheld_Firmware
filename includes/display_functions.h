@@ -30,7 +30,7 @@ void SSD1306_display_trine_logo(void);
 void SSD1306_send_big_char(int character, uint8_t col, uint8_t page);
 void SSD1306_send_PS_symbol(int character, uint8_t col, uint8_t page);
 void SSD1306_display_all_fonts(void);
-void SSD1306_ds4_inputs_setup(void);
+void SSD1306_main_screen_setup(void);
 void SSD1306_display_inputs(struct bt_hid_state* ds4_state);
 
 

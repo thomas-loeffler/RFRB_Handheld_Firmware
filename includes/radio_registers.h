@@ -345,7 +345,7 @@
 // Value is split across two bytes but you'll never need more than 255 preamble bytes so MsByte will always be 0x00
 // Default is 3
 #define MY_PREAMBLE_MSB 0x00
-#define MY_PREAMBLE_LSB 0x04 
+#define MY_PREAMBLE_LSB 0x04
 
 
 
@@ -356,7 +356,8 @@
 // Bits 5-3: SyncSize        - sync word size in bytes, value = (bytes + 1), e.g. 011 = 4 bytes. 
 //                            2 bytes is recommended, can do more if in a crowded 915MHz environment but it adds overhead
 // Bits 2-0: SyncTol         - number of bit errors allowed in sync word (0-7, recommend 0 or 1)
-#define MY_SYNC_CONFIG 0x98 // Sync on, 4 bytes sync word, 0 bit tolerance
+#define MY_SYNC_CONFIG 0x98 // Sync on, only fill fifo when sync mathced, 4 bytes sync word, 0 bit tolerance
+#define MY_SYNC_CONFIG2 0x9A // Sync on, only fill fifo when sync mathced, 4 bytes sync word, 2 bit tolerance
 
 
 

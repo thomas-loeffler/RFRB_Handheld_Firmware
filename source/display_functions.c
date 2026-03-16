@@ -290,54 +290,37 @@ void SSD1306_display_all_fonts(void){
 }
 
 
-void SSD1306_DS4_inputs_setup(void){
-    SSD1306_send_small_char('L', 0, 0);
-    SSD1306_send_small_char('J', 7, 0);
-    SSD1306_send_small_char('O', 14, 0);
-    SSD1306_send_small_char('Y', 21, 0);
-    SSD1306_send_small_char('X', 28, 0);  
-    SSD1306_send_small_char(':', 35, 0);  
+void SSD1306_main_screen_setup(void){
+    SSD1306_send_big_char('R', 11, 0);
+    SSD1306_send_big_char('U', 20, 0);
+    SSD1306_send_big_char('N', 29, 0);
+    SSD1306_send_big_char('N', 38, 0);
+    SSD1306_send_big_char('I', 47, 0);  
+    SSD1306_send_big_char('N', 56, 0);  
+    SSD1306_send_big_char('G', 65, 0);
+    SSD1306_send_big_char(' ', 74, 0);
+    SSD1306_send_big_char('B', 83, 0);  
+    SSD1306_send_big_char('A', 93, 0);  
+    SSD1306_send_big_char('C', 102, 0);  
+    SSD1306_send_big_char('K', 111, 0); 
     
-    SSD1306_send_small_char('L', 0, 1);
-    SSD1306_send_small_char('J', 7, 1);
-    SSD1306_send_small_char('O', 14, 1);
-    SSD1306_send_small_char('Y', 21, 1);
-    SSD1306_send_small_char('Y', 28, 1);  
-    SSD1306_send_small_char(':', 35, 1);
+    SSD1306_send_big_char('D', 0, 2); 
+    SSD1306_send_big_char('B', 9, 2); 
+    SSD1306_send_big_char(':', 18, 2); 
 
-    SSD1306_send_small_char('R', 0, 2);
-    SSD1306_send_small_char('J', 7, 2);
-    SSD1306_send_small_char('O', 14, 2);
-    SSD1306_send_small_char('Y', 21, 2);
-    SSD1306_send_small_char('X', 28, 2);  
-    SSD1306_send_small_char(':', 35, 2);  
-    
-    SSD1306_send_small_char('R', 0, 3);
-    SSD1306_send_small_char('J', 7, 3);
-    SSD1306_send_small_char('O', 14, 3);
-    SSD1306_send_small_char('Y', 21, 3);
-    SSD1306_send_small_char('Y', 28, 3);  
-    SSD1306_send_small_char(':', 35, 3);
+    SSD1306_send_big_char('P', 0, 4); 
+    SSD1306_send_big_char(' ', 9, 4); 
+    SSD1306_send_big_char('L', 18, 4); 
+    SSD1306_send_big_char('O', 27, 4); 
+    SSD1306_send_big_char('S', 36, 4); 
+    SSD1306_send_big_char('S', 45, 4); 
+    SSD1306_send_big_char(':', 54, 4); 
 
-    SSD1306_send_small_char('L', 77, 0);
-    SSD1306_send_small_char('2', 84, 0);
-
-    SSD1306_send_small_char('R', 77, 2);
-    SSD1306_send_small_char('2', 84, 2);
-
-    SSD1306_send_small_char('B', 0, 5);
-    SSD1306_send_small_char('U', 7, 5);
-    SSD1306_send_small_char('T', 14, 5);
-    SSD1306_send_small_char('T', 21, 5);
-    SSD1306_send_small_char('O', 28, 5);
-    SSD1306_send_small_char('N', 35, 5);
-    SSD1306_send_small_char('S', 42, 5);
-    SSD1306_send_small_char(':', 49, 5);
-
-    SSD1306_send_small_char('D', 0, 7);
-    SSD1306_send_small_char('P', 7, 7);
-    SSD1306_send_small_char('A', 14, 7);
-    SSD1306_send_small_char('D', 21, 7);
+    SSD1306_send_big_char('B', 0, 6); 
+    SSD1306_send_big_char('A', 9, 6); 
+    SSD1306_send_big_char('T', 18, 6); 
+    SSD1306_send_big_char('T', 27, 6); 
+    SSD1306_send_big_char(':', 36, 6); 
 
 }
 
