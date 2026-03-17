@@ -33,7 +33,7 @@ uint8_t extract_ds4_ly(struct bt_hid_state* ds4_state){
     return ds4_state -> ly;
 }
 
-/*
+
 //////////////////////////////////////
 //           MAIN FUNCTION          //
 //////////////////////////////////////
@@ -107,10 +107,10 @@ void main(void){
 		
 	}
 }
-*/
 
 
 
+/*
 // RECEIVER MAIN
 
 void main(void){
@@ -181,6 +181,7 @@ void main(void){
 		
 	}
 }
+*/
 
 
 
