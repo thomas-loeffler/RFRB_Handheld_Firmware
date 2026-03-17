@@ -345,7 +345,7 @@
 // Value is split across two bytes but you'll never need more than 255 preamble bytes so MsByte will always be 0x00
 // Default is 3
 #define MY_PREAMBLE_MSB 0x00
-#define MY_PREAMBLE_LSB 0x04
+#define MY_PREAMBLE_LSB 0x08
 
 
 

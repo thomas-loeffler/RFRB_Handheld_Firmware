@@ -47,7 +47,7 @@ void rfm69_reset(void) {
     gpio_put(RADIO_RST, 1);
     sleep_ms(1); // Datasheet specifies at least 100us high, so 1ms is plenty
     gpio_put(RADIO_RST, 0);
-    sleep_ms(5); // Ready after 5ms
+    sleep_ms(5); // Ready after 5ms according to datasheet
 }
 
 
@@ -244,7 +244,7 @@ void rfm69_verify_setup(void) {
         rxtimeout1  == 0x00 &&
         rxtimeout2  == 0x00 &&
         preamblemsb == 0x00 &&
-        preamblelsb == 0x04 &&
+        preamblelsb == 0x08 &&
         syncconfig  == 0x98 &&
         syncvalue1  == 0xCA &&
         syncvalue2  == 0xFE &&
@@ -300,14 +300,23 @@ void rfm69_set_tx(void) {
     rfm69_spi_write(REG_OPMODE, MODE_TX);
 }
 
-void rfm69_set_G0_packet_sent(){
+void rfm69_set_G0_packet_sent(void){
     rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PACKETSENT);
 }
 
-void rfm69_set_G0_packet_received(){
+void rfm69_set_G0_packet_received(void){
     rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PAYLOADREADY);
 }
 
+
+void rfm69_read_packet(uint8_t *buffer){
+
+    uint8_t length = rfm69_spi_read(REG_FIFO);
+    buffer[0] = length;
+    for (uint8_t i = 0; i < length; i++) {
+        buffer[i+1] = rfm69_spi_read(REG_FIFO);
+    }
+}
 
 /* typical program flow:
 rfm69_set_standby();
