@@ -63,10 +63,10 @@ void main(void){
 	SSD1306_clear();
 	SSD1306_display_trine_logo(); // Show the Trine logo on the display at startup
 
-	sleep_ms(4000);
+	sleep_ms(1000);
 
 	SSD1306_clear();
-	SSD1306_main_screen_setup();
+	SSD1306_UI_setup();
 	
 
 	rfm69_setup();
@@ -82,10 +82,31 @@ void main(void){
     float bl;
 	float br;
 	
-	bool link_active = false;
+	bool DS4_conn = false;
+
+	uint8_t rssi = 0;
+	uint8_t pkt_sent = 0;
+	uint8_t pkt_loss = 0;
+
 
 	
 	while (1) {
+
+		/*
+		if(true){ // receive condition
+			// update values
+		}
+		*/
+
+		if(bt_hid_is_connected() && !DS4_conn){
+			SSD1306_send_big_char('*', 120, 0); // if the DS4 just connected, update display with BT icon
+			DS4_conn = true;
+		}
+		else if (!bt_hid_is_connected() && DS4_conn){
+			SSD1306_send_big_char(' ', 120, 0); // if the DS4 just disconnected, clear BT icon
+			DS4_conn = false;
+		}
+		
 
 		bt_hid_get_latest(&ds4_state); // Aquire latest Bluetooth controller state
 
@@ -102,6 +123,9 @@ void main(void){
 		rfm69_set_tx();
 		sleep_ms(2);
 		rfm69_set_rx();
+		pkt_sent += 1;
+		
+
 	
 		sleep_ms(500);
 		

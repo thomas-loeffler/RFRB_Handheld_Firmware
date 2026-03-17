@@ -290,23 +290,34 @@ void SSD1306_display_all_fonts(void){
 }
 
 
-void SSD1306_main_screen_setup(void){
-    SSD1306_send_big_char('R', 11, 0);
-    SSD1306_send_big_char('U', 20, 0);
-    SSD1306_send_big_char('N', 29, 0);
-    SSD1306_send_big_char('N', 38, 0);
-    SSD1306_send_big_char('I', 47, 0);  
-    SSD1306_send_big_char('N', 56, 0);  
-    SSD1306_send_big_char('G', 65, 0);
-    SSD1306_send_big_char(' ', 74, 0);
-    SSD1306_send_big_char('B', 83, 0);  
-    SSD1306_send_big_char('A', 93, 0);  
-    SSD1306_send_big_char('C', 102, 0);  
-    SSD1306_send_big_char('K', 111, 0); 
+void SSD1306_UI_setup(void){
+    SSD1306_send_big_char('R', 8, 0);
+    SSD1306_send_big_char('U', 17, 0);
+    SSD1306_send_big_char('N', 26, 0);
+    SSD1306_send_big_char('N', 35, 0);
+    SSD1306_send_big_char('I', 44, 0);  
+    SSD1306_send_big_char('N', 53, 0);  
+    SSD1306_send_big_char('G', 62, 0);
+    SSD1306_send_big_char(' ', 71, 0);
+    SSD1306_send_big_char('B', 80, 0);  
+    SSD1306_send_big_char('A', 89, 0);  
+    SSD1306_send_big_char('C', 98, 0);  
+    SSD1306_send_big_char('K', 107, 0); 
     
-    SSD1306_send_big_char('D', 0, 2); 
-    SSD1306_send_big_char('B', 9, 2); 
-    SSD1306_send_big_char(':', 18, 2); 
+    SSD1306_send_big_char('R', 0, 2); 
+    SSD1306_send_big_char('S', 9, 2); 
+    SSD1306_send_big_char('S', 18, 2); 
+    SSD1306_send_big_char('I', 27, 2); 
+    SSD1306_send_big_char(':', 36, 2); 
+
+    SSD1306_send_big_char('-', 48, 2); 
+    SSD1306_send_big_char('N', 57, 2); 
+    SSD1306_send_big_char('N', 66, 2); 
+    
+    SSD1306_send_big_char('d', 84, 2); 
+    SSD1306_send_big_char('B', 93, 2); 
+    SSD1306_send_big_char('m', 102, 2); 
+
 
     SSD1306_send_big_char('P', 0, 4); 
     SSD1306_send_big_char(' ', 9, 4); 
@@ -315,271 +326,64 @@ void SSD1306_main_screen_setup(void){
     SSD1306_send_big_char('S', 36, 4); 
     SSD1306_send_big_char('S', 45, 4); 
     SSD1306_send_big_char(':', 54, 4); 
+    
+    SSD1306_send_big_char('1', 67, 4); // TENS AT 67, 4
+    SSD1306_send_big_char('2', 76, 4); // ONES AT 76, 4
+
+    SSD1306_send_big_char('p', 90, 4); 
+    SSD1306_send_big_char('k', 99, 4); 
+    SSD1306_send_big_char('t', 108, 4);
+    SSD1306_send_big_char('s', 117, 4); 
+    
 
     SSD1306_send_big_char('B', 0, 6); 
     SSD1306_send_big_char('A', 9, 6); 
     SSD1306_send_big_char('T', 18, 6); 
     SSD1306_send_big_char('T', 27, 6); 
     SSD1306_send_big_char(':', 36, 6); 
+     
+    SSD1306_send_big_char('2', 50, 6); // TENS AT 50, 6
+    SSD1306_send_big_char('3', 59, 6); // ONES AT 59, 6
+    SSD1306_send_big_char('.', 68, 6); 
+    SSD1306_send_big_char('7', 77, 6); // TENTH AT 77, 6
 
+    SSD1306_send_big_char('V', 88, 6); 
+    
 }
 
 
 
 
-void SSD1306_display_DS4_inputs(struct bt_hid_state* ds4_state){
+void SSD1306_display_DS4_inputs(uint8_t rssi, uint8_t pkt_loss){ // add float batt
     // Variables for storing previous state, preventing unnecessary updates to the display
-    uint8_t LX_prev;
-    uint8_t LY_prev;
-    uint8_t RX_prev;
-    uint8_t RY_prev;
-    uint8_t L2_prev;
-    uint8_t R2_prev;
-    uint16_t buttons_prev;
-    uint8_t PAD_prev;
-
-    /*
-    bool DIP1_prev;
-    bool DIP2_prev;
-    bool DIP3_prev;
-    bool DIP4_prev;
-
     
-    // Values for storing the current DIP switch state
-    bool dip_1;
-    bool dip_2;
-    bool dip_3;
-    bool dip_4;
+    static uint8_t rssi_prev; // do these need to be static?
+    static uint8_t pkt_loss_prev;
+    // static float batt_prev;
 
-
-
-    ////////////////////////////////////////////////
-    //         UPDATING DIP SWITCH VALUES         //
-    ////////////////////////////////////////////////
-    
-    dip_1 = gpio_get(DIP1);
-    dip_2 = gpio_get(DIP2);
-    dip_3 = gpio_get(DIP3);
-    dip_4 = gpio_get(DIP4);
-        
-    if (dip_1 != DIP1_prev){
-        send_small_char(dip_1, 120, 4);
-        DIP1_prev = dip_1;
-    }
-
-    if(dip_2 != DIP2_prev){
-        send_small_char(dip_2, 120, 5);
-        DIP2_prev = dip_2;
-    }
-
-    if(dip_3 != DIP3_prev){
-        send_small_char(dip_3, 120, 6);
-        DIP3_prev = dip_3;
-    }
-
-    if(dip_4 != DIP4_prev){
-        send_small_char(dip_4, 120, 7);
-        DIP4_prev = dip_4;
-    }
-    */
+    /* need to calc rssi and pkt_loss and batt*/
 
     
     ////////////////////////////////////////////////
     //        UPDATING DS4 JOYSTICK VALUES        //
     ////////////////////////////////////////////////
 
-    if (ds4_state->lx != LX_prev){
-        // Update lx on screen
-        SSD1306_send_small_char((ds4_state->lx / 100), 42, 0); // Hundreds
-        SSD1306_send_small_char(((ds4_state->lx / 10) % 10), 49, 0); // Tens
-        SSD1306_send_small_char((ds4_state->lx % 10), 56, 0); // Ones
+    if (rssi != rssi_prev){
+        // Update rssi on screen
+        SSD1306_send_small_char(((rssi / 10) % 10), 67, 4); // Tens
+        SSD1306_send_small_char((rssi % 10), 76, 4); // Ones
         // Update previous value
-        LX_prev = ds4_state->lx;
+        rssi_prev = rssi;
     }
     
-    if (ds4_state->ly != LY_prev){
-        // Update ly on screen
-        SSD1306_send_small_char((ds4_state->ly / 100), 42, 0); // Hundreds
-        SSD1306_send_small_char(((ds4_state->ly / 10) % 10), 49, 0); // Tens
-        SSD1306_send_small_char((ds4_state->ly % 10), 56, 0); // Ones
+    if (pkt_loss != pkt_loss_prev){
+        // Update rssi on screen
+        SSD1306_send_small_char(((pkt_loss / 10) % 10), 67, 4); // Tens
+        SSD1306_send_small_char((pkt_loss % 10), 76, 4); // Ones
         // Update previous value
-        LY_prev = ds4_state->ly;
+        pkt_loss_prev = pkt_loss;
     }
 
-    if (ds4_state->rx != RX_prev){
-        // Update rx on screen
-        SSD1306_send_small_char((ds4_state->rx / 100), 42, 0); // Hundreds
-        SSD1306_send_small_char(((ds4_state->rx / 10) % 10), 49, 0); // Tens
-        SSD1306_send_small_char((ds4_state->rx % 10), 56, 0); // Ones
-        // Update previous value
-        RX_prev = ds4_state->rx;
-    }
-
-    if (ds4_state->ry != RY_prev){
-        // Update ry on screen on screen
-        SSD1306_send_small_char((ds4_state->ry / 100), 42, 0); // Hundreds
-        SSD1306_send_small_char(((ds4_state->ry / 10) % 10), 49, 0); // Tens
-        SSD1306_send_small_char((ds4_state->ry % 10), 56, 0); // Ones
-        // Update previous value
-        RY_prev = ds4_state->ry;
-    }
-
-
-    ////////////////////////////////////////////////
-    //        UPDATING DS4 TRIGGER VALUES         //
-    ////////////////////////////////////////////////
-
-    if (ds4_state->l2 != L2_prev){
-        // Update left trigger on screen
-        SSD1306_send_small_char((ds4_state->l2 / 100), 98, 0); // Hundreds
-        SSD1306_send_small_char(((ds4_state->l2 / 10) % 10), 105, 0); // Tens
-        SSD1306_send_small_char((ds4_state->l2 % 10), 112, 0); // Ones
-        // Update previous value
-        L2_prev = ds4_state->l2;
-    }
-
-    
-    if (ds4_state->r2 != R2_prev){
-        // Update right trigger on screen
-        SSD1306_send_small_char((ds4_state->r2 / 100), 98, 0); // Hundreds
-        SSD1306_send_small_char(((ds4_state->r2 / 10) % 10), 105, 0); // Tens
-        SSD1306_send_small_char((ds4_state->r2 % 10), 112, 0); // Ones
-        // Update previous value
-        R2_prev = ds4_state->r2;
-    }
-
-
-    ////////////////////////////////////////////////
-    //   UPDATING DS4 INDIVIDUAL BUTTON VALUES    //
-    ////////////////////////////////////////////////
-
-    // Button mapping
-    //      Bit 15:
-    //      Bit 14: 
-    //      Bit 13: 
-    //      Bit 12: 
-    //      Bit 11: 
-    //      Bit 10: 
-    //      Bit 9: 
-    //      Bit 8: 
-    //      Bit 7:
-    //      Bit 6:
-    //      Bit 5:
-    //      Bit 4:
-    //      Bit 3:
-    //      Bit 2:
-    //      Bit 1:
-    //      Bit 0:
-
-    // MSB -> LSB 
-    if (ds4_state->buttons && 0x8000 != (buttons_prev & 0x8000)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x8000), 0, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x4000 != (buttons_prev & 0x4000)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x4000), 7, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x2000 != (buttons_prev & 0x2000)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x2000), 14, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x1000 != (buttons_prev & 0x1000)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x1000), 21, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0800 != (buttons_prev & 0x0800)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0800), 28, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0400 != (buttons_prev & 0x0400)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0400), 35, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0200 != (buttons_prev & 0x0200)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0300), 42, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0100 != (buttons_prev & 0x0100)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0100), 49, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0080 != (buttons_prev & 0x0080)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0080), 56, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0040 != (buttons_prev & 0x0040)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0040), 63, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0020 != (buttons_prev & 0x0020)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0020), 70, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0010 != (buttons_prev & 0x0010)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0010), 77, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0008 != (buttons_prev & 0x0008)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0008), 84, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0004 != (buttons_prev & 0x0004)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0004), 91, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0002 != (buttons_prev & 0x0002)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0002), 98, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-    if( ds4_state->buttons && 0x0001 != (buttons_prev & 0x0001)){
-        // Update ?? button status on screen
-        SSD1306_send_small_char((ds4_state->buttons & 0x0001), 105, 6);
-        // Update previous value
-        buttons_prev = ds4_state->buttons;
-    }
-
-
-    ////////////////////////////////////////////////
-    //          UPDATING DS4 DPAD VALUE           //
-    ////////////////////////////////////////////////
-    
-    if (ds4_state->pad != PAD_prev){
-        // Update DPAD value on screen
-        SSD1306_send_small_char(ds4_state->pad, 35, 7);
-        // Update previous value
-        PAD_prev = ds4_state->pad;
-    }
-
+    // need to add batt
 }
 
