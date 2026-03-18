@@ -311,8 +311,8 @@ void SSD1306_UI_setup(void){
     SSD1306_send_big_char(':', 36, 2); 
 
     SSD1306_send_big_char('-', 48, 2); 
-    SSD1306_send_big_char('N', 57, 2); 
-    SSD1306_send_big_char('N', 66, 2); 
+    SSD1306_send_big_char(' ', 57, 2); // RSSI TENS 57, 2
+    SSD1306_send_big_char(' ', 66, 2); // RSSI ONES 66, 2
     
     SSD1306_send_big_char('d', 84, 2); 
     SSD1306_send_big_char('B', 93, 2); 
@@ -327,8 +327,8 @@ void SSD1306_UI_setup(void){
     SSD1306_send_big_char('S', 45, 4); 
     SSD1306_send_big_char(':', 54, 4); 
     
-    SSD1306_send_big_char('1', 67, 4); // TENS AT 67, 4
-    SSD1306_send_big_char('2', 76, 4); // ONES AT 76, 4
+    SSD1306_send_big_char(' ', 67, 4); // PKT LOSS TENS AT 67, 4
+    SSD1306_send_big_char(' ', 76, 4); // PKT LOSS ONES AT 76, 4
 
     SSD1306_send_big_char('p', 90, 4); 
     SSD1306_send_big_char('k', 99, 4); 
@@ -342,10 +342,10 @@ void SSD1306_UI_setup(void){
     SSD1306_send_big_char('T', 27, 6); 
     SSD1306_send_big_char(':', 36, 6); 
      
-    SSD1306_send_big_char('2', 50, 6); // TENS AT 50, 6
-    SSD1306_send_big_char('3', 59, 6); // ONES AT 59, 6
+    SSD1306_send_big_char(' ', 50, 6); // BATTERY TENS AT 50, 6
+    SSD1306_send_big_char(' ', 59, 6); // BATTERY ONES AT 59, 6
     SSD1306_send_big_char('.', 68, 6); 
-    SSD1306_send_big_char('7', 77, 6); // TENTH AT 77, 6
+    SSD1306_send_big_char(' ', 77, 6); // BATTERY TENTH AT 77, 6
 
     SSD1306_send_big_char('V', 88, 6); 
     
@@ -354,36 +354,57 @@ void SSD1306_UI_setup(void){
 
 
 
-void SSD1306_display_DS4_inputs(uint8_t rssi, uint8_t pkt_loss){ // add float batt
+void SSD1306_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
+    
     // Variables for storing previous state, preventing unnecessary updates to the display
-    
-    static uint8_t rssi_prev; // do these need to be static?
+    static uint8_t rssi_prev; 
     static uint8_t pkt_loss_prev;
-    // static float batt_prev;
+    static uint8_t batt_prev;
 
-    /* need to calc rssi and pkt_loss and batt*/
 
-    
-    ////////////////////////////////////////////////
-    //        UPDATING DS4 JOYSTICK VALUES        //
-    ////////////////////////////////////////////////
-
-    if (rssi != rssi_prev){
-        // Update rssi on screen
-        SSD1306_send_small_char(((rssi / 10) % 10), 67, 4); // Tens
-        SSD1306_send_small_char((rssi % 10), 76, 4); // Ones
+    // --------------- RSSI ---------------
+    uint8_t rssi_dbm = rssi/2; // RSSI function according to the datasheet
+    if (rssi_dbm != rssi_prev){
+        // Calculations
+        uint8_t rssi_tens = (rssi_dbm / 10) % 10;
+        uint8_t rssi_ones = rssi_dbm % 10;
+        // Update screen 
+        SSD1306_send_big_char(rssi_tens, 57, 2);
+        SSD1306_send_big_char(rssi_ones, 66, 2);
         // Update previous value
-        rssi_prev = rssi;
+        rssi_prev = rssi_dbm;
     }
     
+
+    // ------------ Packet Loss ------------
     if (pkt_loss != pkt_loss_prev){
-        // Update rssi on screen
-        SSD1306_send_small_char(((pkt_loss / 10) % 10), 67, 4); // Tens
-        SSD1306_send_small_char((pkt_loss % 10), 76, 4); // Ones
+        // Calculations
+        uint8_t pkt_loss_tens = (pkt_loss / 10) % 10;
+        uint8_t pkt_loss_ones = pkt_loss % 10;
+        // Update screen
+        if(pkt_loss_tens == 0){
+            SSD1306_send_big_char(pkt_loss_ones, 72, 4);
+        }
+        else{
+            SSD1306_send_big_char(pkt_loss_tens, 67, 4);
+            SSD1306_send_big_char(pkt_loss_ones, 76, 4);
+        }
         // Update previous value
         pkt_loss_prev = pkt_loss;
     }
 
-    // need to add batt
+
+    if (batt != batt_prev){
+        // Calculations (battery voltage comes in as a 3 digit number (xyz) scaled up by 10 to represent (xy.z))
+        uint8_t batt_tens  = (batt / 100) % 10;
+        uint8_t batt_ones  = (batt / 10) % 10;
+        uint8_t batt_tenth = batt % 10;
+        // Update screen
+        SSD1306_send_big_char(batt_tens, 50, 6);
+        SSD1306_send_big_char(batt_ones, 59, 6); 
+        SSD1306_send_big_char(batt_tenth, 77, 6); 
+        // Update previous value
+        batt_prev = batt;
+    }
 }
 

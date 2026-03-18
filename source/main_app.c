@@ -23,6 +23,7 @@
 #include "mechanum_functions.h"
 
 extern volatile bool radio_event;
+volatile bool loop_10ms = false;
 
 
 uint8_t extract_ds4_lx(struct bt_hid_state* ds4_state){
@@ -32,6 +33,7 @@ uint8_t extract_ds4_lx(struct bt_hid_state* ds4_state){
 uint8_t extract_ds4_ly(struct bt_hid_state* ds4_state){
     return ds4_state -> ly;
 }
+
 
 
 //////////////////////////////////////
@@ -84,19 +86,20 @@ void main(void){
 	
 	bool DS4_conn = false;
 
-	uint8_t rssi = 0;
+	uint8_t rssi = 79;
 	uint8_t pkt_sent = 0;
-	uint8_t pkt_loss = 0;
+	uint8_t pkt_loss = 4;
+	uint8_t batt = 215;
 
 
 	
 	while (1) {
 
-		/*
-		if(true){ // receive condition
-			// update values
+		
+		if(gpio_get(TEST)){ // G0 high, message received 
+			SSD1306_update(rssi, pkt_loss, batt);
 		}
-		*/
+		
 
 		if(bt_hid_is_connected() && !DS4_conn){
 			SSD1306_send_big_char('*', 120, 0); // if the DS4 just connected, update display with BT icon
@@ -117,7 +120,7 @@ void main(void){
 
 		packet_packing(fl, fr, bl, br, payload);
 		
-		// Transmitter code
+		
 		rfm69_set_standby();
 		rfm69_write_fifo(payload, 4);
 		rfm69_set_tx();
@@ -125,10 +128,7 @@ void main(void){
 		rfm69_set_rx();
 		pkt_sent += 1;
 		
-
 	
-		sleep_ms(500);
-		
 	}
 }
 

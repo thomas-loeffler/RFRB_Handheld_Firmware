@@ -31,7 +31,7 @@ void SSD1306_send_big_char(int character, uint8_t col, uint8_t page);
 void SSD1306_send_PS_symbol(int character, uint8_t col, uint8_t page);
 void SSD1306_display_all_fonts(void);
 void SSD1306_UI_setup(void);
-void SSD1306_display_inputs(struct bt_hid_state* ds4_state);
+void SSD1306_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt);
 
 
 
