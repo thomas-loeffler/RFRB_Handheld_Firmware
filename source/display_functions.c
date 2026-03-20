@@ -12,6 +12,7 @@
 // User defined headers
 #include "display_functions.h"
 #include "display_font.h"
+#include "bt_hid.h"
 
 
 
@@ -355,6 +356,20 @@ void SSD1306_UI_setup(void){
 
 
 void SSD1306_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
+
+    static bool DS4_conn = false; // init to false
+
+    if(bt_hid_is_connected() && !DS4_conn){
+        SSD1306_send_big_char('*', 120, 0); // if the DS4 just connected, update display with BT icon
+        DS4_conn = true;
+    }
+    else if (!bt_hid_is_connected() && DS4_conn){
+        SSD1306_send_big_char(' ', 120, 0); // if the DS4 just disconnected, clear BT icon
+        DS4_conn = false;
+    }
+
+
+    
     
     // Variables for storing previous state, preventing unnecessary updates to the display
     static uint8_t rssi_prev; 

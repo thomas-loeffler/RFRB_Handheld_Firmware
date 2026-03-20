@@ -4,14 +4,6 @@
 //////////////////////////////////////
 
 #include <stdint.h>
-#include "bt_hid.h" // so the header knows what type struct bt_hid_state is
-
-
-//////////////////////////////////////
-//            VARIABLES             //
-//////////////////////////////////////
-
-extern struct ds4 ds4_state;
 
 
 

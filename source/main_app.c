@@ -20,30 +20,14 @@
 #include "display_functions.h" // for the I2C display
 #include "radio_functions.h" // for the RFM69 radio functions
 #include "radio_registers.h" // for the RFM69 register definitions
-#include "mechanum_functions.h"
+#include "task_functions.h"
+
 
 extern volatile bool radio_event;
-volatile bool loop_10ms = false;
 
+// Structure used to hold the Bluetooth controller data
+struct bt_hid_state ds4_state = {0};
 
-uint8_t extract_ds4_lx(struct bt_hid_state* ds4_state){
-    return ds4_state -> lx;
-}
-
-uint8_t extract_ds4_ly(struct bt_hid_state* ds4_state){
-    return ds4_state -> ly;
-}
-void wait_for_transmit(){
-	uint64_t start = time_us_64(); // for a timeout
-	while (!(rfm69_spi_read(REG_IRQFLAGS2) & 0x08)) { // polling the "Packet Sent" Flag
-		if ((time_us_64() - start) > 3000) { // 3 ms timeout
-			break;
-		}
-		; // busy wait
-	}
-	sleep_us(300); // let it settle not sure why this is needed but if i dont then the receiver misses alot of packets
-
-}
 
 
 
@@ -51,10 +35,8 @@ void wait_for_transmit(){
 //           MAIN FUNCTION          //
 //////////////////////////////////////
 
-void main(void){
 
-	// Structure used to hold the Bluetooth controller data
-	struct bt_hid_state ds4_state = {0};
+void main(void){
 
 	// Initializes all configured standard I/O interfaces (USB serial in our case)
 	stdio_init_all();
@@ -84,19 +66,10 @@ void main(void){
 
 	rfm69_setup();
 
-	
-	uint8_t payload[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+	init_all_queues();
+
 	uint8_t ack_buffer[4] = {0,0,0,0};
 
-	uint8_t raw_x;
-	uint8_t raw_y;
-
-	float fl;
-	float fr;
-    float bl;
-	float br;
-	
-	bool DS4_conn = false;
 
 	uint8_t rssi = 10;
 	uint8_t pkt_sent = 0;
@@ -106,44 +79,21 @@ void main(void){
 
 
 	uint64_t next_tx_time = time_us_64();
+	uint64_t now = time_us_64();
 
 
 	while (1) {
-		uint64_t now = time_us_64();
+		now = time_us_64();
 
     	if (now >= next_tx_time) {
 			// Schedule next transmit EXACTLY 10ms later
 			next_tx_time = now + 10000; // 10 ms in microseconds
 			
-
-			if(bt_hid_is_connected() && !DS4_conn){
-				SSD1306_send_big_char('*', 120, 0); // if the DS4 just connected, update display with BT icon
-				DS4_conn = true;
-			}
-			else if (!bt_hid_is_connected() && DS4_conn){
-				SSD1306_send_big_char(' ', 120, 0); // if the DS4 just disconnected, clear BT icon
-				DS4_conn = false;
-			}
-			
-
-			bt_hid_get_latest(&ds4_state); // Aquire latest Bluetooth controller state
-
-			raw_x = extract_ds4_lx(&ds4_state);
-			raw_y = extract_ds4_ly(&ds4_state);
-
-			mechanum_driver(raw_x, raw_y, &fl, &fr, &bl, &br);
-
-			packet_packing(fl, fr, bl, br, payload);
-			
-			
-			rfm69_set_standby();
-			rfm69_write_fifo(payload, 4);
-			rfm69_set_tx();
-			wait_for_transmit();
-			rfm69_set_rx();
+			get_ds4_inputs();
+			mechanum_driver();
+			pack_and_send();
 			pkt_sent += 1;
 
-			
         	
 		}
 		else{
@@ -154,6 +104,7 @@ void main(void){
 				// batt = ack_buffer[3];
 				//
 				// pkt_loss = pkt_sent - pkt_rec;
+				// pkt_sent = 0;
 
 				rssi += 1;
 				pkt_loss += 1;
@@ -165,8 +116,6 @@ void main(void){
 				SSD1306_update(rssi, pkt_loss, batt);
 			}
 		}
-		
-	
 	}
 }
 
