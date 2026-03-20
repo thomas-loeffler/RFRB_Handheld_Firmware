@@ -5,21 +5,22 @@
 //////////////////////////////////////
 
 #include <stdint.h>
-#include "bt_hid.h" // for externs
-#include "queue.h"
+#include "bt_hid.h" // For externs
+#include "pico/util/queue.h" // For externs
 
 
 
 //////////////////////////////////////
-//    EXTERNAL GLOBAL VARIABLES     //
+//    GLOBAL VARIABLE DECLARATION   //
 //////////////////////////////////////
 
 extern struct bt_hid_state ds4_state;
-extern Queue Mechanum_q;		
-extern Queue TX_q;
 
 
 
+//////////////////////////////////////
+//              DEFINES             //
+//////////////////////////////////////
 
 #define MOTOR_SCALING 12
 

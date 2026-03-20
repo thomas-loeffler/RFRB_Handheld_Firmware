@@ -8,6 +8,8 @@
 
 
 // ---------- FIFO Data Register ----------
+// Hold the data to be sent and data received from other transmitters
+// Reading is destructive
 #define REG_FIFO            0x00  // FIFO read/write
 
 
@@ -224,14 +226,16 @@
 
 // ---------- Automatic Frequency Correction Bandwidth Register ----------
 #define REG_AFCBW           0x1A
-// Bits 7-5: DccFreq - DC cancellation filter cutoff frequency
-//           010 = default, leave here unless you have DC offset issues
+// Bits 7-5: DccFreq  - DC cancellation filter cutoff frequency
+//                      010 = default, leave here unless you have DC offset issues
 //
-// Bits 4-3: RxBwMant 00 = 16, 01 = 20, 10 = 24, 11 = reserved
+// Bits 4-3: RxBwMant - 00 = 16, 01 = 20, 10 = 24, 11 = reserved
 //
-// Bits 2-0: RxBwExp - exponent of bandwidth formula
-//           In FSK, RX bandwidth is:
-//           RxBw = F_osc(32MHz) / (RxBwMant * 2^(RxBwExp + 2))
+// Bits 2-0: RxBwExp  - exponent of bandwidth formula
+//           
+// In FSK, RX bandwidth is:
+// RxBw = F_osc(32MHz) / (RxBwMant * 2^(RxBwExp + 2))
+//
 // Must always be wider than RegRxBw - gives AFC routine a larger window
 // to find and correct frequency offset between radios at receiver startup
 // RxBwMant=20, RxBwExp=1: 32MHz / (20 * 2^(1+2)) = 32MHz / 160 = 200kHz
@@ -240,6 +244,7 @@
 
 
 
+// ------ Automatic Frequency Correction and Frequency Error Indicator Register ------
 #define REG_AFCFEI 0x1E
 // AFC = Automatic Frequency Correction - measures AND corrects frequency offset
 // FEI = Frequency Error Indicator      - measures and REPORTS offset only, no correction
@@ -262,7 +267,7 @@
 // Bit 0: AfcStart       - write 1 to manually trigger an AFC measurement
 //                         always reads back 0, one shot trigger
 //                         (not needed since AFCauto is on)
-#define MY_AFCFEI 0x04
+#define MY_AFCFEI 0x04 // Always perform AFC when entering RX
 
 
 
@@ -295,6 +300,7 @@
 
 #define REG_IRQFLAGS1       0x27  // Read only flags register (no relevant flags)
 #define REG_IRQFLAGS2       0x28  // Read only flags register (packet sent / payload ready)
+
 
 
 // ---------- RSSI (Received Signal Strength Indicator) Threshold REgister ----------
@@ -440,6 +446,7 @@
 //                                1 = AES encryption on 
 // reccomended value: 0011 0010 = 0x32 InterPacketRxDelay 80us, auto RX restart on, AES encryption off
 #define MY_PACKETCONFIG2 0x32
+
 
 
 // ---------- Digital Automatic Gain Control ----------

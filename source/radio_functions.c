@@ -3,49 +3,57 @@
 //             INCLUDES             //
 //////////////////////////////////////
 
-// Standard includes / hardware headers
+// ====== Standard Headers / Libraries ======
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
-#include <stdio.h>
-//#include <string.h>
+#include <stdio.h> // for verify_radio_setup
+#include <string.h>
 
-// User defined headers
+
+// ========== User defined headers ==========
 #include "radio_functions.h"
 #include "peripheral_setup.h" // For GPIO pin definitions
 #include "radio_registers.h" // For register definitions and bit masks
 
 
 
+//////////////////////////////////////
+//             VARIABLES            //
+//////////////////////////////////////
+
 const uint8_t SYNC_WORD[4] = {0xCA, 0xFE, 0xBA, 0xBE}; // Sync word to use for the radio
+
+
 
 
 //////////////////////////////////////
 //       FUNCTION DEFINITIONS       //
 //////////////////////////////////////
 
-// reg is the register you're writing too, and value what you want to write to that register
+// "reg" is the register you're writing too, and "value" is what you want to write to that register
 void rfm69_spi_write(uint8_t reg, uint8_t value) {
     gpio_put(SPI_CS, 0);             // CS low to select the chip
-    uint8_t buf[2] = { reg | 0x80, value }; // MSB=1 for write
+    uint8_t buf[2] = { reg | 0x80, value }; // MSB of reg = 1 for write
     spi_write_blocking(spi0, buf, 2);
     gpio_put(SPI_CS, 1);             // CS high to finish
 }
 
-// reg is youre reading from, and the return value is the data read from that register
+// "reg" is the register you're reading from, and the return "value" is the data read from that register
 uint8_t rfm69_spi_read(uint8_t reg) {
-    gpio_put(SPI_CS, 0);             // select the chip
-    uint8_t out_buf[2] = { reg & 0x7F, 0x00 }; // MSB=0 for read
+    gpio_put(SPI_CS, 0);             // CS low to select the chip
+    uint8_t out_buf[2] = { reg & 0x7F, 0x00 }; // MSB of reg = 0 for read
     uint8_t in_buf[2] = { 0 };
     spi_write_read_blocking(spi0, out_buf, in_buf, 2);
-    gpio_put(SPI_CS, 1);             // deselect
-    return in_buf[1];                // second byte is the data
+    gpio_put(SPI_CS, 1);             // CS high to finish / deselect the chip
+    return in_buf[1];                // Second byte from the input buffer is the data from the register
 }
 
 
 // Shouldn't need to reset the radio on every boot, but this is useful for testing and ensures a known state
+// This function resets all the registers to their default values
 void rfm69_reset(void) {
     gpio_put(RADIO_RST, 1);
-    sleep_ms(1); // Datasheet specifies at least 100us high, so 1ms is plenty
+    sleep_us(100); // Datasheet specified (page 76)
     gpio_put(RADIO_RST, 0);
     sleep_ms(5); // Ready after 5ms according to datasheet
 }
@@ -54,7 +62,9 @@ void rfm69_reset(void) {
 // Debugging function
 void rfm69_check_version(void) {
     uint8_t version = rfm69_spi_read(REG_VERSION); 
+
     printf("RFM69 version: 0x%02X\n", version);
+
     if (version != 0x24) {
         printf("SPI communication failed!\n");
     } else {
@@ -64,64 +74,85 @@ void rfm69_check_version(void) {
 
 void rfm69_setup(void) {
 
-    rfm69_spi_write(REG_OPMODE, MODE_STANDBY); // Set to standby mode (if not already) to allow writing to registers
+    // Set to standby mode (if not already) to allow writing to registers
+    rfm69_spi_write(REG_OPMODE, MODE_STANDBY); 
 
-    rfm69_spi_write(REG_DATAMODUL, MY_DATAMODUL); // Packet mode, FSK, no shaping
+    // Packet mode, FSK (frequency shift keying) (modulation type), no moduation shaping
+    rfm69_spi_write(REG_DATAMODUL, MY_DATAMODUL); 
 
-    rfm69_spi_write(REG_BITRATEMSB, BR_100kb_MSB); // 100kbps bitrate
+    // 100kbps bitrate
+    rfm69_spi_write(REG_BITRATEMSB, BR_100kb_MSB); 
     rfm69_spi_write(REG_BITRATELSB, BR_100kb_LSB);
 
-    rfm69_spi_write(REG_FDEVMSB, FDEV_50k_MSB); // 50kHz frequency deviation
+    // 50kHz frequency deviation
+    rfm69_spi_write(REG_FDEVMSB, FDEV_50k_MSB);
     rfm69_spi_write(REG_FDEVLSB, FDEV_50k_LSB);
 
-    rfm69_spi_write(REG_FRFMSB, FRF_915_MSB); // 915MHz frequency
+    // 915MHz frequency. Always write LSB last since freqnecy only updates on LSB write
+    rfm69_spi_write(REG_FRFMSB, FRF_915_MSB); 
     rfm69_spi_write(REG_FRFMID, FRF_915_MID);
-    rfm69_spi_write(REG_FRFLSB, FRF_915_LSB); // Always write LSB last since freqnecy only updates on LSB write
+    rfm69_spi_write(REG_FRFLSB, FRF_915_LSB); 
 
-    rfm69_spi_write(REG_PALEVEL, MY_TX_POWER); // PA1 on, PA2 off, OutputPower = 31 = +13dBm
+    // PA1 on, PA2 off, output power = +13dBm (PA = Power Amplifier)
+    rfm69_spi_write(REG_PALEVEL, MY_TX_POWER);
 
-    rfm69_spi_write(REG_PARAMP, MY_PARAMP); // Set PA ramp-up time to default (40us)
+    // Set PA ramp-up time to default (40us)
+    rfm69_spi_write(REG_PARAMP, MY_PARAMP);
 
-    rfm69_spi_write(REG_OCP, MY_OCP); // OCP on, 95mA limit
+    // OCP (over current protection) on, 95mA limit
+    rfm69_spi_write(REG_OCP, MY_OCP); 
 
-    rfm69_spi_write(REG_LNA, MY_LNA_RX_POWER); // 50 ohm input impedance, ACG on
+    // 50 ohm input impedance, ACG on
+    rfm69_spi_write(REG_LNA, MY_LNA_RX_POWER);
 
-    rfm69_spi_write(REG_RXBW, MY_RXBW); // Rx bandwidth 167kHz
+    // Rx bandwidth 167kHz
+    rfm69_spi_write(REG_RXBW, MY_RXBW);
 
-    rfm69_spi_write(REG_AFCBW, MY_AFCBW); // AFC bandwidth 200kHz, wider than RxBw for better AFC
+    // AFC (automatic frequency correction) bandwidth 200kHz, wider than RxBw for better AFC
+    rfm69_spi_write(REG_AFCBW, MY_AFCBW); 
 
+    // Always perform AFC when entering RX
     rfm69_spi_write(REG_AFCFEI, MY_AFCFEI);
 
+    // Set G0 IRQ to Packet Sent
     rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PACKETSENT);
     rfm69_spi_write(REG_DIOMAPPING2, MY_DIOMAPPING2);
 
+    // Set RX minimum signal strength detection to -114dBm
     rfm69_spi_write(REG_RSSITHRESH, MY_RSSITHRESH);
 
+    // Disabling RX hardware timer timeout
     rfm69_spi_write(REG_RXTIMEOUT1, MY_RXTIMEOUT1);
     rfm69_spi_write(REG_RXTIMEOUT2, MY_RXTIMEOUT2);
 
+    // Set preamble length to 8 bytes
     rfm69_spi_write(REG_PREAMBLEMSB, MY_PREAMBLE_MSB);
-    rfm69_spi_write(REG_PREAMBLELSB, MY_PREAMBLE_LSB); // 4 preamble bytes
+    rfm69_spi_write(REG_PREAMBLELSB, MY_PREAMBLE_LSB);
 
 
-    
-    rfm69_spi_write(REG_SYNC_CONFIG, MY_SYNC_CONFIG); // Sync on, 4 bytes sync word, 0 bit tolerance
+    // Sync on, 4 bytes sync word, 0 bit tolerance
+    rfm69_spi_write(REG_SYNC_CONFIG, MY_SYNC_CONFIG);
+
+    // Write sync word as 0xCAFEBABE
 	rfm69_spi_write(REG_SYNCVALUE1, SYNC_WORD[0]);
 	rfm69_spi_write(REG_SYNCVALUE2, SYNC_WORD[1]);
 	rfm69_spi_write(REG_SYNCVALUE3, SYNC_WORD[2]);
 	rfm69_spi_write(REG_SYNCVALUE4, SYNC_WORD[3]);
 
-    rfm69_spi_write(REG_PACKETCONFIG1, MY_PACKETCONFIG1); // Fixed length packets, CRC on, discard bad packets, no address filtering
+    // Variable length packets, CRC on, discard bad packets, no address filtering
+    rfm69_spi_write(REG_PACKETCONFIG1, MY_PACKETCONFIG1);
 
-    rfm69_spi_write(REG_PAYLOADLENGTH, MY_PAYLOAD_LENGTH); // Maximum packet length 64 bytes
+    // Maximum packet length 64 bytes
+    rfm69_spi_write(REG_PAYLOADLENGTH, MY_PAYLOAD_LENGTH);
 
-    rfm69_spi_write(REG_FIFOTHRESH, MY_FIFOTHRESH); // Transmit if fifo not empty, threshhold = 0
+    // In TX mode: transmit if fifo not empty, threshhold = 0
+    rfm69_spi_write(REG_FIFOTHRESH, MY_FIFOTHRESH); 
 
-    rfm69_spi_write(REG_PACKETCONFIG2, MY_PACKETCONFIG2); //InterPacketRxDelay 80us, auto RX restart on, AES encryption off
+    // InterPacketRxDelay = 80us, auto RX restart on, AES encryption off
+    rfm69_spi_write(REG_PACKETCONFIG2, MY_PACKETCONFIG2);
 
+    // DAGC (digital automatic gain control) on, normal modulation index
     rfm69_spi_write(REG_TESTDAGC, MY_TESTDAGC);
-
-
 }
 
 
@@ -264,9 +295,10 @@ void rfm69_verify_setup(void) {
 
 
 void rfm69_write_fifo(uint8_t *payload, uint8_t length) {
-    rfm69_spi_write(REG_FIFO, length); // writing the length as the first byte
+    rfm69_spi_write(REG_FIFO, length); // Writing the length of the payload (not including this byte) as the first byte
+    
     for (uint8_t i = 0; i < length; i++) {
-        rfm69_spi_write(REG_FIFO, payload[i]); // then writing the rest of the data
+        rfm69_spi_write(REG_FIFO, payload[i]); // Writing the rest of the data
     }
 }
 
@@ -275,16 +307,14 @@ void rfm69_verify_fifo(uint8_t *payload, uint8_t length) {
     // bytes are consumed on read, FIFO will be empty after this function
     // do not call this in normal TX flow, development verification only
     bool success = true;
+
     for (uint8_t i = 0; i < length; i++) {
         uint8_t readback = rfm69_spi_read(REG_FIFO);
-        printf("FIFO[%d]: wrote 0x%02X  read 0x%02X  %s\n",
-            i, payload[i], readback,
-            payload[i] == readback ? "OK" : "FAIL");
+        printf("FIFO[%d]: wrote 0x%02X  read 0x%02X\n", i, payload[i], readback);
         if (payload[i] != readback) success = false;
     }
 
-    printf(success ? "\nFIFO verify SUCCESSFUL\n\n" 
-                   : "\nFIFO verify FAILED\n\n");
+    printf(success ? "\nFIFO verify SUCCESSFUL\n\n" : "\nFIFO verify FAILED\n\n");
 }
 
 
@@ -310,21 +340,11 @@ void rfm69_set_G0_packet_received(void){
 
 
 void rfm69_read_packet(uint8_t *buffer){
-
     uint8_t length = rfm69_spi_read(REG_FIFO);
+
     buffer[0] = length;
+
     for (uint8_t i = 0; i < length; i++) {
         buffer[i+1] = rfm69_spi_read(REG_FIFO);
     }
 }
-
-/* typical program flow:
-rfm69_set_standby();
-rfm69_write_fifo(payload, length);
-rfm69_set_tx();
-// wait for PacketSent on DIO0 or poll IrqFlags2
-rfm69_set_rx();
-*/
-
-// for the transmit irq, i could just poll that in the main loop, i dont think i would need an actual inturrupt routine,
-// becasue i would only set a flag thats read in the main loop that would just get proccessed anyway, its polling a flag or polling a pin... 

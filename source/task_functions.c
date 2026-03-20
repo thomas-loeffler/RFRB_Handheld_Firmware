@@ -3,16 +3,15 @@
 //             INCLUDES             //
 //////////////////////////////////////
 
-// Standard includes / hardware headers
+// ====== Standard Headers / Libraries ======
 #include "pico/stdlib.h"
+#include "pico/util/queue.h"
 #include "math.h"
 
-// User defined headers
+// ========== User defined headers ==========
 #include "task_functions.h"
 #include "helper_functions.h"
 #include "radio_functions.h"
-
-
 
 
 
@@ -24,33 +23,28 @@
 
 void get_ds4_inputs(){
 
+    // Init variables for joystick values
     uint8_t raw_lx;
 	uint8_t raw_ly;
     uint8_t raw_rx;
 
-	float fl;
-	float fr;
-    float bl;
-	float br;
-
-
-    bt_hid_get_latest(&ds4_state); // Aquire latest Bluetooth controller state
+    // Aquire latest Bluetooth controller state
+    bt_hid_get_latest(&ds4_state); 
 
     raw_lx = extract_ds4_lx(&ds4_state); // grab the left joytick X value from the struct
     raw_ly = extract_ds4_ly(&ds4_state); // grab the left joytick Y value from the struct
 
     raw_rx = extract_ds4_rx(&ds4_state); // grab the left joytick Y value from the struct
 
+    // Adding identifiers to the variables so they can be distinguished when dequeueing
+    int16_t lx = (int16_t)(raw_lx | 0x0100); 
+    int16_t ly = (int16_t)(raw_ly | 0x0200);
+    int16_t rx = (int16_t)(raw_rx | 0x0300);
 
-    int16_t lx = (int16_t)(raw_lx | 0x0100); // top 8 bits are id for what data it is
-    int16_t ly = (int16_t)(raw_ly | 0x0200); // top 8 bits are id for what data it is
-    int16_t rx = (int16_t)(raw_rx | 0x0300); // top 8 bits are id for what data it is
-    
-
-    enqueue(&Mechanum_q, lx);
-    enqueue(&Mechanum_q, ly);
-    enqueue(&Mechanum_q, rx);
-
+    // Enqueueing for the mechanum math function
+    queue_try_add(&Mechanum_q, &lx);
+    queue_try_add(&Mechanum_q, &ly);
+    queue_try_add(&Mechanum_q, &rx);
 }
 
 
@@ -59,30 +53,36 @@ void get_ds4_inputs(){
 
 void mechanum_driver(void) {
 
+    // Init varaibles to be received from input acquisition
     int16_t data;
     uint8_t raw_lx;
     uint8_t raw_ly;
     uint8_t raw_rx;
 
+    // Dequeue inputs until queue is empty
     for (uint8_t i = 0; i<10; i++){
-        dequeue(&Mechanum_q, &data);
-        if((data & 0xFF00) == 0x0100){
+        if(queue_is_empty(&Mechanum_q)){
+            break;
+        }
+
+        queue_try_remove(&Mechanum_q, &data);
+
+        if((data & 0xFF00) == 0x0100){ // 1 is the ID for left joystick x
             raw_lx = (uint8_t)(data & 0x00FF);
         }
-        if((data & 0xFF00) == 0x0200){
+        if((data & 0xFF00) == 0x0200){ // 2 is the ID for left joystick y
             raw_ly = (uint8_t)(data & 0x00FF);
         }
-        if((data & 0xFF00) == 0x0300){
+        if((data & 0xFF00) == 0x0300){ // 3 is the ID for right joystick x
             raw_rx = (uint8_t)(data & 0x00FF);
         }
     }
 
-
+    // Init variables for motor commands
     float fl;
 	float fr;
     float bl;
 	float br;
-
 
 	// Normalising raw inputs (0 - 255) to (-1 - 1)
     float norm_x = ((float)raw_lx - 127.5f) / 127.5f;
@@ -104,7 +104,8 @@ void mechanum_driver(void) {
     if (fabs(bl) > max) max = fabs(bl);
     if (fabs(br) > max) max = fabs(br);
 
-    // Scaling if needed (on diagonal commands, value can exceed 1)
+    // Scaling if needed (on diagonal commands value can exceed 1)
+    // READ THIS: should i be doing this if i want a smaller value if joystick isnt slammed all the way?
     if (max > 1.0f) {
         fl /= max;
         fr /= max;
@@ -112,24 +113,23 @@ void mechanum_driver(void) {
         br /= max;
     }
 
-    // Rounding to nearest whole number then casting to an integer
+    // Scaling up to the max value, rounding to nearest whole number then casting to an integer
     int8_t fl_scaled = round_and_cast(fl * MOTOR_SCALING); 
     int8_t fr_scaled = round_and_cast(fr * MOTOR_SCALING); 
     int8_t bl_scaled = round_and_cast(bl * MOTOR_SCALING); 
     int8_t br_scaled = round_and_cast(br * MOTOR_SCALING); 
 
+    // Adding identifiers to the variables so they can be distinguished when dequeueing
+    int16_t fl_q = (int16_t)(((uint8_t)fl_scaled) | 0x0100); 
+    int16_t fr_q = (int16_t)(((uint8_t)fr_scaled) | 0x0200); 
+    int16_t bl_q = (int16_t)(((uint8_t)bl_scaled) | 0x0300);
+    int16_t br_q = (int16_t)(((uint8_t)br_scaled) | 0x0400);
 
-    int16_t fl_q = (int16_t)(((uint8_t)fl_scaled) | 0x0100); // top 8 bits are id for what data it is
-    int16_t fr_q = (int16_t)(((uint8_t)fr_scaled) | 0x0200); // top 8 bits are id for what data it is
-    int16_t bl_q = (int16_t)(((uint8_t)bl_scaled) | 0x0300); // top 8 bits are id for what data it is
-    int16_t br_q = (int16_t)(((uint8_t)br_scaled) | 0x0400); // top 8 bits are id for what data it is
-
-    enqueue(&TX_q, fl_q);
-    enqueue(&TX_q, fr_q);
-    enqueue(&TX_q, bl_q);
-    enqueue(&TX_q, br_q);
-
-  
+    // Enqueueing for the transmitting function
+    queue_try_add(&TX_q, &fl_q);
+    queue_try_add(&TX_q, &fr_q);
+    queue_try_add(&TX_q, &bl_q);
+    queue_try_add(&TX_q, &br_q);
 }
 
 
@@ -137,13 +137,20 @@ void mechanum_driver(void) {
 void pack_and_send(void){
 
     int16_t data;
-    int8_t fl;
-    int8_t fr; 
-    int8_t bl; 
-    int8_t br;
+    // Init all motor commands to 0 just for safety
+    int8_t fl = 0; 
+    int8_t fr = 0; 
+    int8_t bl = 0; 
+    int8_t br = 0;
 
+    // Dequeue inputs until queue is empty
     for (uint8_t i = 0; i<10; i++){
-        bool n_empty = dequeue(&TX_q, &data);
+        if(queue_is_empty(&Mechanum_q)){
+            break;
+        }
+
+        queue_try_remove(&TX_q, &data);
+
         if((data & 0xFF00) == 0x0100){
             fl = (uint8_t)(data & 0x00FF);
         }
@@ -156,10 +163,6 @@ void pack_and_send(void){
         else if((data & 0xFF00) == 0x0400){
             br = (uint8_t)(data & 0x00FF);
         }
-
-        if(!n_empty){
-            break;
-        }
     }
 
     uint8_t payload[4];
@@ -170,6 +173,7 @@ void pack_and_send(void){
     payload[2] = (uint8_t)bl;
     payload[3] = (uint8_t)br;
 
+    // Sending payload then switching back to RX
     rfm69_set_standby();
     rfm69_write_fifo(payload, 4);
     rfm69_set_tx();

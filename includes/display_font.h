@@ -8,7 +8,7 @@
 
 
 //////////////////////////////////////
-//            VARIABLES             //
+//    GLOBAL VARIABLE DECLARATION   //
 //////////////////////////////////////
 
 extern const uint8_t Trine_Logo[300];

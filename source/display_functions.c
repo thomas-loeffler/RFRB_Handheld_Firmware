@@ -3,13 +3,11 @@
 //             INCLUDES             //
 //////////////////////////////////////
 
-// Standard includes / hardware headers
+// ====== Standard Headers / Libraries ======
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
-#include <stdio.h>
-#include <string.h>
 
-// User defined headers
+// ========== User defined headers ==========
 #include "display_functions.h"
 #include "display_font.h"
 #include "bt_hid.h"
@@ -20,19 +18,9 @@
 //       FUNCTION DEFINITIONS       //
 //////////////////////////////////////
 
-// Bonus function in here for now
-void stdio_send_ds4_outputs(struct bt_hid_state* state)
-{
-	printf("buttons: %04x, l: %d,%d, r: %d,%d, l2,r2: %d,%d hat: %d\n",
-				state->buttons, state->lx, state->ly, state->rx, state->ry,
-				state->l2, state->r2, state->hat);
-}
-
-
-
 void SSD1306_send_command(uint8_t cmd) {
 
-    // first byte of the buffer is 0x00 for the control byte (signifying a command)
+    // First byte of the buffer is 0x00 for the control byte (signifying a command)
     // Bit 7	= Co (Continuation)     Co = 0 → last byte in a transmission (or just sending one command)
     //                                  Co = 1 → more bytes to follow (for sending multiple commands in one I²C write)
     // Bit 6	= D/C (Data/Command)    D/C = 0 → the next byte is a command
@@ -41,52 +29,39 @@ void SSD1306_send_command(uint8_t cmd) {
     uint8_t buf[2] = {0x00, cmd};
 
     // i2c_write_blocking sends a byte, taking care of start and stop conditions
-    // argument 1: which i2c peripheral 
-    // argument 2: device adress
-    // argument 3: pointer to the buffer of bytes you want to send
-    // argument 4: number of bytes in the array
-    // argument 5: false at the end means a stop condition will be sent
-    // returns number of bytes written, should be 2
+    // Argument 1: which i2c peripheral 
+    // Argument 2: device adress
+    // Argument 3: pointer to the buffer of bytes you want to send
+    // Argument 4: number of bytes in the array
+    // Argument 5: false at the end means a stop condition will be sent
+    // Returns number of bytes written, should be 2. If it does not return 2, there was an error
     
     int ret = i2c_write_blocking(i2c0, 0x3C, buf, 2, false);
-
-    /* if ret does not return 2 (2 bytes written), there was an error
-    if (ret != 2) {
-        gpio_put(25, true);
-    }
-    */
-
 }
 
 
 
 void SSD1306_send_data(uint8_t data) {
-    // see notes in send_i2c_command
+    // See notes in send_i2c_command
     uint8_t buf[2] = {0x40, data};
 
     int ret = i2c_write_blocking(i2c0, 0x3C, buf, 2, false);
-
-    /* if ret does not return 2 (2 bytes written), there was an error
-    if (ret != 2) {
-        gpio_put(25, true);
-    }
-    */
 }
 
 
 
 void SSD1306_set_col_addr(uint8_t start, uint8_t end) {
     SSD1306_send_command(0x21); // Column address command
-    SSD1306_send_command(start);
-    SSD1306_send_command(end);
+    SSD1306_send_command(start); // Starting column
+    SSD1306_send_command(end); // Ending column
 }
 
 
 
 void SSD1306_set_page_addr(uint8_t start, uint8_t end) {
     SSD1306_send_command(0x22); // Page address command
-    SSD1306_send_command(start);
-    SSD1306_send_command(end);
+    SSD1306_send_command(start); // Starting address
+    SSD1306_send_command(end); // Ending address
 }
 
 
@@ -97,7 +72,7 @@ void SSD1306_clear(void) {
 	SSD1306_set_page_addr(0, 7);
 
     // writting 0x00 to all locations clears the display
-    for (int i = 0; i < 128 * 8; i++) { // 128 columns * 8 pages
+    for (int i = 0; i < (128 * 8); i++) { // 128 columns * 8 pages
         SSD1306_send_data(0x00);
     }
 }
@@ -160,9 +135,12 @@ void SSD1306_display_trine_logo(void){
 
 // The small characters are 5x8 pixels (one page tall)
 void SSD1306_send_small_char(int character, uint8_t col, uint8_t page){
+    // Casting the given character to use it as an index in the lookup table
     uint8_t index = (uint8_t)character;
-    SSD1306_set_col_addr(col, col+5);
-    SSD1306_set_page_addr(page, page);
+
+    SSD1306_set_col_addr(col, col+4); // Need 5 columns for a character that is 5 pixels wide
+    SSD1306_set_page_addr(page, page); // Need 1 page (8 pixels tall) for a character that is 8 pixels tall
+
     for (uint8_t i = 0; i<5; i++){
         SSD1306_send_data(font_8p[index][i]);
     }
@@ -172,13 +150,15 @@ void SSD1306_send_small_char(int character, uint8_t col, uint8_t page){
 
 // The big characters are 8x16 pixels (two pages tall)
 void SSD1306_send_big_char(int character, uint8_t col, uint8_t page){
-    uint8_t index = (uint8_t)character;
-    SSD1306_set_col_addr(col, col+7);
-    SSD1306_set_page_addr(page, page+1);
+    // Casting the given character to use it as an index in the lookup table
+    uint8_t index = (uint8_t)character; 
+
+    SSD1306_set_col_addr(col, col+7); // Need 8 columns for a character that is 8 pixels wide
+    SSD1306_set_page_addr(page, page+1); // Need 2 pages (8 pixels tall) for a character that is 16 pixels tall
+
     for (uint8_t i = 0; i<16; i++){
         SSD1306_send_data(font_16p[index][i]);
     }
-
 }
 
 
@@ -186,26 +166,32 @@ void SSD1306_send_big_char(int character, uint8_t col, uint8_t page){
 void SSD1306_send_PS_symbol(int character, uint8_t col, uint8_t page){
     uint8_t index = 0;
 
-    if (character == 'X'){
+    if (character == 'X'){ // X
         index == 0;
-    } else if (character == 'S'){
+    } 
+    else if (character == 'S'){ // Square
         index = 1;
-    } else if (character == 'O'){
+    } 
+    else if (character == 'O'){ // Circle
         index = 2;
-    } else if (character == 'T'){
+    } 
+    else if (character == 'T'){ // Triangle
         index = 3;
-    } else {
+    } 
+    else { // Plain dot
         index = 4;
     }
 
-    SSD1306_set_col_addr(col, col+15);
-    SSD1306_set_page_addr(page, page+1);
+    SSD1306_set_col_addr(col, col+15); // Need 16 columns for the 16x16 symbol
+    SSD1306_set_page_addr(page, page+1); // Need 2 pages for the 16x16 symbol
+
     for (uint8_t i = 0; i<32; i++){
         SSD1306_send_data(PS_symbols[index][i]);
     }
 }
 
 
+// Displaying all of both fonts
 void SSD1306_display_all_fonts(void){
     SSD1306_send_small_char('A', 0, 0);
     SSD1306_send_small_char('B', 7, 0);
@@ -290,7 +276,7 @@ void SSD1306_display_all_fonts(void){
     SSD1306_send_PS_symbol('T', 112, 6);
 }
 
-
+// User interface for the handheld
 void SSD1306_UI_setup(void){
     SSD1306_send_big_char('R', 8, 0);
     SSD1306_send_big_char('U', 17, 0);
@@ -312,8 +298,8 @@ void SSD1306_UI_setup(void){
     SSD1306_send_big_char(':', 36, 2); 
 
     SSD1306_send_big_char('-', 48, 2); 
-    SSD1306_send_big_char(' ', 57, 2); // RSSI TENS 57, 2
-    SSD1306_send_big_char(' ', 66, 2); // RSSI ONES 66, 2
+    SSD1306_send_big_char(' ', 57, 2); // RSSI TENS VALUE AT 57, 2
+    SSD1306_send_big_char(' ', 66, 2); // RSSI ONES VALUE AT 66, 2
     
     SSD1306_send_big_char('d', 84, 2); 
     SSD1306_send_big_char('B', 93, 2); 
@@ -328,8 +314,8 @@ void SSD1306_UI_setup(void){
     SSD1306_send_big_char('S', 45, 4); 
     SSD1306_send_big_char(':', 54, 4); 
     
-    SSD1306_send_big_char(' ', 67, 4); // PKT LOSS TENS AT 67, 4
-    SSD1306_send_big_char(' ', 76, 4); // PKT LOSS ONES AT 76, 4
+    SSD1306_send_big_char(' ', 67, 4); // PKT LOSS TENS VALUE AT 67, 4
+    SSD1306_send_big_char(' ', 76, 4); // PKT LOSS ONES VALUE AT 76, 4
 
     SSD1306_send_big_char('p', 90, 4); 
     SSD1306_send_big_char('k', 99, 4); 
@@ -343,10 +329,10 @@ void SSD1306_UI_setup(void){
     SSD1306_send_big_char('T', 27, 6); 
     SSD1306_send_big_char(':', 36, 6); 
      
-    SSD1306_send_big_char(' ', 50, 6); // BATTERY TENS AT 50, 6
-    SSD1306_send_big_char(' ', 59, 6); // BATTERY ONES AT 59, 6
+    SSD1306_send_big_char(' ', 50, 6); // BATTERY TENS VALUE AT 50, 6
+    SSD1306_send_big_char(' ', 59, 6); // BATTERY ONES VALUE AT 59, 6
     SSD1306_send_big_char('.', 68, 6); 
-    SSD1306_send_big_char(' ', 77, 6); // BATTERY TENTH AT 77, 6
+    SSD1306_send_big_char(' ', 77, 6); // BATTERY TENTH VALUE AT 77, 6
 
     SSD1306_send_big_char('V', 88, 6); 
     
@@ -354,11 +340,12 @@ void SSD1306_UI_setup(void){
 
 
 
-
-void SSD1306_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
+// Updating the monitored values
+void SSD1306_UI_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
 
     static bool DS4_conn = false; // init to false
 
+    // Updating the bluetooth icon that designates if the DS4 is connected
     if(bt_hid_is_connected() && !DS4_conn){
         SSD1306_send_big_char('*', 120, 0); // if the DS4 just connected, update display with BT icon
         DS4_conn = true;
@@ -368,9 +355,6 @@ void SSD1306_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
         DS4_conn = false;
     }
 
-
-    
-    
     // Variables for storing previous state, preventing unnecessary updates to the display
     static uint8_t rssi_prev; 
     static uint8_t pkt_loss_prev;
@@ -397,7 +381,7 @@ void SSD1306_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
         uint8_t pkt_loss_tens = (pkt_loss / 10) % 10;
         uint8_t pkt_loss_ones = pkt_loss % 10;
         // Update screen
-        if(pkt_loss_tens == 0){
+        if(pkt_loss_tens == 0){ // if value is only one digit, display it centered without the tens digit
             SSD1306_send_big_char(pkt_loss_ones, 72, 4);
         }
         else{
@@ -410,7 +394,7 @@ void SSD1306_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
 
 
     if (batt != batt_prev){
-        // Calculations (battery voltage comes in as a 3 digit number (xyz) scaled up by 10 to represent (xy.z))
+        // Calculations (battery voltage comes in as a 3 digit number (xyz) scaled up by 10, to represent (xy.z))
         uint8_t batt_tens  = (batt / 100) % 10;
         uint8_t batt_ones  = (batt / 10) % 10;
         uint8_t batt_tenth = batt % 10;
