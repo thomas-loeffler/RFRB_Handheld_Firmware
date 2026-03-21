@@ -55,9 +55,9 @@ void mechanum_driver(void) {
 
     // Init varaibles to be received from input acquisition
     int16_t data;
-    uint8_t raw_lx;
-    uint8_t raw_ly;
-    uint8_t raw_rx;
+    uint8_t raw_lx = 128; // Init to resting position incase dequeing fails
+    uint8_t raw_ly = 128;
+    uint8_t raw_rx = 128;
 
     // Dequeue inputs until queue is empty
     for (uint8_t i = 0; i<10; i++){
@@ -86,17 +86,30 @@ void mechanum_driver(void) {
 
 	// Normalising raw inputs (0 - 255) to (-1 - 1)
     float norm_x = ((float)raw_lx - 127.5f) / 127.5f;
-    float norm_y = -1 * (((float)raw_ly - 127.5f) / 127.5f); // flip so up is positive
+    float norm_y = -1 * (((float)raw_ly - 127.5f) / 127.5f); // Flip sign so up is positive
+    float norm_t = ((float)raw_rx - 127.5f) / 127.5f; // T for turn
+
 
     // Applying deadzone
     if (fabs(norm_x) < 0.1f) norm_x = 0;
     if (fabs(norm_y) < 0.1f) norm_y = 0;
+    if (fabs(norm_t) < 0.1f) norm_t = 0;
+
 
 	// Applying X and Y values to each motor
     fl = norm_y + norm_x;
     fr = norm_y - norm_x;
     bl = norm_y - norm_x;
     br = norm_y + norm_x;
+
+    /*
+    // Applying X, Y, and Turn values to each motor
+    fl = norm_y + norm_x + norm_t;
+    fr = norm_y - norm_x - norm_t;
+    bl = norm_y - norm_x + norm_t;
+    br = norm_y + norm_x - norm_t;
+    */
+    
 
     // Finding maximum motor value
     float max = fabs(fl);
@@ -112,6 +125,26 @@ void mechanum_driver(void) {
         bl /= max;
         br /= max;
     }
+
+    /*
+    // Always normalize by the largest value (avoids clamping AND preserves proportion)
+    if (max > 0.0f) {  // guard against division by zero when all inputs are 0
+        fl /= max;
+        fr /= max;
+        bl /= max;
+        br /= max;
+    }
+
+    // Then re-scale by the actual joystick magnitude so half-stick = half speed
+    float magnitude = sqrtf(norm_x * norm_x + norm_y * norm_y);
+    // float magnitude = sqrtf(norm_x * norm_x + norm_y * norm_y + norm_t * norm_t); // with turn
+    if (magnitude > 1.0f) magnitude = 1.0f;  // clamp to 1 (corners of joystick range)
+
+    fl *= magnitude;
+    fr *= magnitude;
+    bl *= magnitude;
+    br *= magnitude;
+    */
 
     // Scaling up to the max value, rounding to nearest whole number then casting to an integer
     int8_t fl_scaled = round_and_cast(fl * MOTOR_SCALING); 

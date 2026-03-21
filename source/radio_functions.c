@@ -6,7 +6,7 @@
 // ====== Standard Headers / Libraries ======
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
-#include <stdio.h> // for verify_radio_setup
+#include <stdio.h> // For verify_radio_setup
 #include <string.h>
 
 
