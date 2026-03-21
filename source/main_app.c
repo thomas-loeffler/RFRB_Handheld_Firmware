@@ -96,11 +96,16 @@ void main(void){
     	if (now >= next_tx_time) { 
 			// Schedule next transmit EXACTLY 10ms later
 			next_tx_time = now + 10000; // 10 ms in microseconds
-			
-			get_ds4_inputs();
-			mechanum_driver();
-			pack_and_send();
-			pkt_sent += 1;
+
+			// If the DS4 is connected, transmit. Else, do nothing
+			if(bt_hid_is_connected()){
+
+				get_ds4_inputs();
+				mechanum_driver();
+				pack_and_send();
+				pkt_sent += 1;
+
+			}
 		}
 
 		// If its not time to send a transmission wait for ack from robot and display data
@@ -121,8 +126,12 @@ void main(void){
 				pkt_loss += 1;
 				batt -= 1;
 
-				SSD1306_UI_update(rssi, pkt_loss, batt);
+				
 				radio_event = false;
+			}
+			else{
+				// Needs to be in else statement for updating even when not receiving acks
+				SSD1306_UI_update(rssi, pkt_loss, batt);
 			}
 		}
 	}

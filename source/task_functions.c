@@ -89,26 +89,34 @@ void mechanum_driver(void) {
     float norm_y = -1 * (((float)raw_ly - 127.5f) / 127.5f); // Flip sign so up is positive
     float norm_t = ((float)raw_rx - 127.5f) / 127.5f; // T for turn
 
-
     // Applying deadzone
     if (fabs(norm_x) < 0.1f) norm_x = 0;
     if (fabs(norm_y) < 0.1f) norm_y = 0;
     if (fabs(norm_t) < 0.1f) norm_t = 0;
 
+    // Damping the rotational component so our running back doesnt turn into a helicopter
+    norm_t *= ROT_DAMP_FACT;
 
-	// Applying X and Y values to each motor
-    fl = norm_y + norm_x;
-    fr = norm_y - norm_x;
-    bl = norm_y - norm_x;
-    br = norm_y + norm_x;
+    // Early exit to skip all the calulations if the controller is at rest
+    if (norm_x == 0 && norm_y == 0 && norm_t == 0) {
+        int16_t fl_q = (int16_t)(0x0100); 
+        int16_t fr_q = (int16_t)(0x0200); 
+        int16_t bl_q = (int16_t)(0x0300);
+        int16_t br_q = (int16_t)(0x0400);
 
-    /*
+        // Sending straight up 0s since we know the variables are 0
+        queue_try_add(&TX_q, &fl_q);
+        queue_try_add(&TX_q, &fr_q);
+        queue_try_add(&TX_q, &bl_q);
+        queue_try_add(&TX_q, &br_q);
+        return;
+    }
+    
     // Applying X, Y, and Turn values to each motor
     fl = norm_y + norm_x + norm_t;
     fr = norm_y - norm_x - norm_t;
     bl = norm_y - norm_x + norm_t;
     br = norm_y + norm_x - norm_t;
-    */
     
 
     // Finding maximum motor value
@@ -116,18 +124,12 @@ void mechanum_driver(void) {
     if (fabs(fr) > max) max = fabs(fr);
     if (fabs(bl) > max) max = fabs(bl);
     if (fabs(br) > max) max = fabs(br);
-
-    // Scaling if needed (on diagonal commands value can exceed 1)
-    // READ THIS: should i be doing this if i want a smaller value if joystick isnt slammed all the way?
-    if (max > 1.0f) {
-        fl /= max;
-        fr /= max;
-        bl /= max;
-        br /= max;
-    }
-
-    /*
-    // Always normalize by the largest value (avoids clamping AND preserves proportion)
+    
+    // Normalize all motors by the largest motor value so no motor exceeds 1.
+    // This is necessary because diagonal and combined inputs can push individual
+    // motors above 1, while cardinal directions never exceed 1. Dividing by the
+    // max preserves the ratio between motors (direction) while keeping all
+    // values within range.
     if (max > 0.0f) {  // guard against division by zero when all inputs are 0
         fl /= max;
         fr /= max;
@@ -136,21 +138,24 @@ void mechanum_driver(void) {
     }
 
     // Then re-scale by the actual joystick magnitude so half-stick = half speed
-    float magnitude = sqrtf(norm_x * norm_x + norm_y * norm_y);
-    // float magnitude = sqrtf(norm_x * norm_x + norm_y * norm_y + norm_t * norm_t); // with turn
+    // float magnitude = sqrtf(norm_x * norm_x + norm_y * norm_y);
+    float magnitude = sqrtf(norm_x * norm_x + norm_y * norm_y + norm_t * norm_t); // with turn
+
     if (magnitude > 1.0f) magnitude = 1.0f;  // clamp to 1 (corners of joystick range)
 
     fl *= magnitude;
     fr *= magnitude;
     bl *= magnitude;
     br *= magnitude;
-    */
+    
 
     // Scaling up to the max value, rounding to nearest whole number then casting to an integer
     int8_t fl_scaled = round_and_cast(fl * MOTOR_SCALING); 
     int8_t fr_scaled = round_and_cast(fr * MOTOR_SCALING); 
     int8_t bl_scaled = round_and_cast(bl * MOTOR_SCALING); 
     int8_t br_scaled = round_and_cast(br * MOTOR_SCALING); 
+
+    // mecanum_resultant_TEST(fl * MOTOR_SCALING, fr * MOTOR_SCALING, bl * MOTOR_SCALING, br * MOTOR_SCALING);    
 
     // Adding identifiers to the variables so they can be distinguished when dequeueing
     int16_t fl_q = (int16_t)(((uint8_t)fl_scaled) | 0x0100); 
@@ -178,7 +183,7 @@ void pack_and_send(void){
 
     // Dequeue inputs until queue is empty
     for (uint8_t i = 0; i<10; i++){
-        if(queue_is_empty(&Mechanum_q)){
+        if(queue_is_empty(&TX_q)){
             break;
         }
 

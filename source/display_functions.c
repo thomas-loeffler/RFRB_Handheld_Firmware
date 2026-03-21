@@ -355,6 +355,19 @@ void SSD1306_UI_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt){
         DS4_conn = false;
     }
 
+    if (rssi == 255 && pkt_loss == 255 && batt == 255){
+        // Update screen to all dashes, showing robot is disconnected 
+        SSD1306_send_big_char('-', 57, 2); // RSSI
+        SSD1306_send_big_char('-', 66, 2);
+
+        SSD1306_send_big_char('-', 67, 4); // Packet Loss
+        SSD1306_send_big_char('-', 76, 4);
+
+        SSD1306_send_big_char('-', 50, 6); // Battery
+        SSD1306_send_big_char('-', 59, 6); 
+        SSD1306_send_big_char('-', 77, 6); 
+    }
+
     // Variables for storing previous state, preventing unnecessary updates to the display
     static uint8_t rssi_prev; 
     static uint8_t pkt_loss_prev;

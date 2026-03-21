@@ -23,6 +23,7 @@ extern struct bt_hid_state ds4_state;
 //////////////////////////////////////
 
 #define MOTOR_SCALING 12
+#define ROT_DAMP_FACT 0.5f
 
 
 //////////////////////////////////////

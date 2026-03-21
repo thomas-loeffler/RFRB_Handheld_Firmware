@@ -87,12 +87,16 @@ void mecanum_resultant_TEST(float fl, float fr, float bl, float br){
     // Calculating the total x and y vectors imparted on the robot
     float result_x = (fl - fr - bl + br) * (COS_45);
     float result_y = (fl + fr + bl + br) * (COS_45);
+
+    float result_rot = (fl + bl) - (fr + br);
 	
     // Calculating the angle of the resulting force vector
     float angle_rad = atan2(result_x, result_y); // Swapped the arguments so 0 deg would be forward
     float angle_deg = angle_rad * (180.0f / PI);
 
-    printf("%.2f %.2f   Radians: %.2f   Degrees: %.2f\n", result_x, result_y, angle_rad, angle_deg);
+    printf("%.1f %.1f %.1f %.1f         ", fl, fr, bl, br);
+    printf("%.2f %.2f   Degrees: %.2f   Rotation: %.2f\n", result_x, result_y, angle_deg, result_rot);
+
 }
 
 
