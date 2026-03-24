@@ -1,0 +1,122 @@
+
+========== MECHANUM PHYSICS ==========
+
+Wheel Roller Orientation:
+
+   FL        FR
+    \        /
+     \      /
+     /      \
+    /        \
+
+   BL        BR
+
+
+
+Wheel Force Vectors
+
+FL  ↗      ↖  FR
+  ↙          ↘
+
+  ↖          ↗
+BL  ↘      ↙  BR
+
+1  = wheel spinning towards the front of the robot
+-1 = wheel spinning towards the back of the robot
+
+
+
+Forward:		Backward:		Strafe Left:		Strafe Right:
+  FL = 1		  FL = -1		  FL = -1			  FL = 1	
+  FR = 1		  FR = -1		  FR = 1			  FR = -1
+  BL = 1		  BL = -1		  BL = 1			  BL = -1
+  BR = 1		  BR = -1		  BR = -1			  BR = 1
+
+
+Diagonal NW (forward left):		Diagonal NE (forward Right):
+  FL = 0			  			  FL = 1
+  FR = 1						  FR = 0
+  BL = 1						  BL = 0
+  BR = 0						  BR = 1
+
+
+Diagonal SW (backward left):	Diagonal SE (backward right):
+  FL = -1			  			  FL = 0
+  FR = 0						  FR = -1
+  BL = 0						  BL = -1
+  BR = -1						  BR = 0
+	
+
+
+Rotate CCW:			Rotate CW:
+  FL = -1			  FL = 1
+  FR = 1			  FR = -1
+  BL = -1			  BL = 1
+  BR = 1			  BR = -1
+
+
+
+
+
+
+
+
+
+
+========== RECEIVER MAIN PROGRAM ==========
+
+void main(void){
+	
+	stdio_init_all(); // Initializes all configured standard I/O interfaces (USB serial in our case)
+	
+	sleep_ms(1000);
+
+	GPIO_setup(); 		// Setup the GPIO pins for the DIP switches and the simple cycle pin
+	spi_setup(); 		// Setup the SPI peripheral for the RFM69 radio
+	radio_irq_setup();
+
+	rfm69_setup();
+
+	uint8_t buffer[9];
+
+	uint32_t last_packet_time = to_ms_since_boot(get_absolute_time());  // timestamp of last received packet
+	uint32_t now = 0;
+	bool link_active = false;
+
+	
+	rfm69_set_G0_packet_received();
+	sleep_ms(10); // needed to let the radio settle into ready state before rx
+	rfm69_set_rx();
+	sleep_ms(10); // let receive mode stabilise
+	
+	
+	while (1) {
+
+		
+		if(radio_event){
+			rfm69_read_packet(buffer);
+			last_packet_time = to_ms_since_boot(get_absolute_time());  // timestamp of last received packet
+			radio_event = false;
+		}
+
+		now = to_ms_since_boot(get_absolute_time());
+
+		// If no packet for 3 seconds
+		if (now - last_packet_time > 3000) {
+	
+			// Hard reset + re-init sequence
+			rfm69_reset();                // pulls RESET pin low, releases
+			rfm69_setup();                // re-write all radio registers
+			rfm69_set_G0_packet_received(); 
+			sleep_ms(5);                  // let radio settle
+			rfm69_set_rx();               // back to RX mode
+			sleep_ms(5);                  // stabilize receive
+
+			// Reset the last_packet_time to avoid repeated resets
+			last_packet_time = now;
+		}
+	}
+}
+
+
+

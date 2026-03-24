@@ -24,6 +24,8 @@ add_executable(main_app
     source/display_functions.c
     source/display_font.c
     source/radio_functions.c
+    source/helper_functions.c
+    source/task_functions.c
 )
 
 pico_enable_stdio_usb(main_app 1)
@@ -42,6 +44,7 @@ target_link_libraries(main_app
     pico_btstack_ble
     pico_btstack_cyw43
     pico_multicore
+    pico_util
     hardware_i2c
     hardware_spi
     hardware_gpio
