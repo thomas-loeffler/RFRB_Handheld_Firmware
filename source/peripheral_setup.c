@@ -66,6 +66,12 @@ void GPIO_setup(void) {
     gpio_init(RADIO_RST); // GP20 / physical pin 26
     gpio_set_dir(RADIO_RST, GPIO_OUT);
     gpio_put(RADIO_RST, 0); // Radio reset pin active high, so start with it low to exit reset state
+
+
+    // ============ Radio Enable Pin ============
+    gpio_init(RADIO_EN); // GP22 / physical pin 29
+    gpio_set_dir(RADIO_EN, GPIO_OUT);
+    gpio_put(RADIO_EN, 1); // Enable pin active high, keep high to not disable 
 }
 
 

@@ -32,7 +32,7 @@ void SSD1306_display_all_fonts(void);
 
 void SSD1306_UI_setup(void);
 
-void SSD1306_UI_update(uint8_t rssi, uint8_t pkt_loss, uint8_t batt);
+
 
 
 

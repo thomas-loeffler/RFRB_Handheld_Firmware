@@ -67,24 +67,22 @@ void main(void){
 	sleep_ms(1000);
 	SSD1306_clear();
 	SSD1306_UI_setup();
+	SSD1306_send_big_char(20, 110, 6);
+	SSD1306_send_big_char(21, 118, 6);
 	
 	rfm69_setup();
 
 	init_all_queues();
 
-	// Buffer for receiving ack messages from the robot
-	uint8_t ack_buffer[4] = {0,0,0,0};
-
 	// Variables for holding received indicators from the robot
-	uint8_t rssi = 10;
 	uint8_t pkt_sent = 0;
-	uint8_t pkt_loss = 0;
-	uint8_t pkt_rec = 0;
-	uint8_t batt = 229;
-
+	
 	// Varaibles for 10ms loop timing
 	uint64_t next_tx_time = time_us_64();
+	uint64_t next_packet_expected = time_us_64();
 	uint64_t now = time_us_64();
+
+	bool link; // variable describing wether the robot is connected
 
 
 	while (1) {
@@ -110,28 +108,20 @@ void main(void){
 
 		// If its not time to send a transmission wait for ack from robot and display data
 		else{
-			if(radio_event){ // This chunk still under development
-				
-				// rfm69_read_packet(ack_buffer);
-				// rssi = ack_buffer[1];
-				// pkt_rec = ack_buffer[2];
-				// batt = ack_buffer[3];
-				//
-				// pkt_loss = pkt_sent - pkt_rec;
-				// pkt_sent = 0;
+			if(radio_event){ 
 
-				// somehting about timing how many acks ive missed
+				now = time_us_64();
+				next_packet_expected = now + 1500*1000; // 1500 ms in microseconds = 3 missed packets
 
-				rssi += 1;
-				pkt_loss += 1;
-				batt -= 1;
-
-				
+				process_ack();
+				pkt_sent = 0;
+				link = true;
 				radio_event = false;
 			}
 			else{
-				// Needs to be in else statement for updating even when not receiving acks
-				SSD1306_UI_update(rssi, pkt_loss, batt);
+				now = time_us_64();
+				if (now > next_packet_expected) link = false;
+				SSD1306_UI_update(pkt_sent, link);
 			}
 		}
 	}

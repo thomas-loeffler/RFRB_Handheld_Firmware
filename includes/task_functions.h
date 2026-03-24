@@ -24,6 +24,7 @@ extern struct bt_hid_state ds4_state;
 
 #define MOTOR_SCALING 12
 #define ROT_DAMP_FACT 0.5f
+#define DISCONNECT_ERROR 0x04FF
 
 
 //////////////////////////////////////
@@ -35,3 +36,7 @@ void get_ds4_inputs(void);
 void mechanum_driver(void);
 
 void pack_and_send(void);
+
+void SSD1306_UI_update(uint8_t pkt_sent, bool link);
+
+void process_ack(void);

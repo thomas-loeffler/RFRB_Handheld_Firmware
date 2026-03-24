@@ -26,6 +26,7 @@
 // Declaring the queues in this file because this is where the init function is
 queue_t Mechanum_q;
 queue_t TX_q;
+queue_t Display_q;
 
 
 
@@ -38,6 +39,7 @@ queue_t TX_q;
 void init_all_queues(void){
     queue_init(&Mechanum_q, sizeof(int16_t), 10);
     queue_init(&TX_q, sizeof(int16_t), 10);
+    queue_init(&Display_q, sizeof(int16_t), 10);
 }
 
 
