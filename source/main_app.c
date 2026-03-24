@@ -118,7 +118,7 @@ void main(void){
 				link = true;
 				radio_event = false;
 			}
-			else{
+			else{ 
 				now = time_us_64();
 				if (now > next_packet_expected) link = false;
 				SSD1306_UI_update(pkt_sent, link);
