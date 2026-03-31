@@ -67,10 +67,9 @@ void main(void){
 	sleep_ms(1000);
 	SSD1306_clear();
 	SSD1306_UI_setup();
-	SSD1306_send_big_char(20, 110, 6);
-	SSD1306_send_big_char(21, 118, 6);
 	
 	rfm69_setup();
+	//rfm69_set_G0_packet_sent();
 
 	init_all_queues();
 
@@ -82,7 +81,7 @@ void main(void){
 	uint64_t next_packet_expected = time_us_64();
 	uint64_t now = time_us_64();
 
-	bool link; // variable describing wether the robot is connected
+	bool link = false; // variable describing wether the robot is connected
 
 
 	while (1) {
@@ -94,6 +93,8 @@ void main(void){
     	if (now >= next_tx_time) { 
 			// Schedule next transmit EXACTLY 10ms later
 			next_tx_time = now + 10000; // 10 ms in microseconds
+
+			//stdio_send_ds4_outputs(&ds4_state); // For debugging, send the DS4 inputs to USB serial
 
 			// If the DS4 is connected, transmit. Else, do nothing
 			if(bt_hid_is_connected()){
@@ -115,8 +116,8 @@ void main(void){
 
 				process_ack();
 				pkt_sent = 0;
-				link = true;
-				radio_event = false;
+				link = true; // if we got an ack, then we know the robot is connected
+				radio_event = false; // reset the radio event variable for the next packet
 			}
 			else{ 
 				now = time_us_64();

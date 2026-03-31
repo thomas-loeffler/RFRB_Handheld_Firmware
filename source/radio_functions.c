@@ -114,8 +114,8 @@ void rfm69_setup(void) {
     // Always perform AFC when entering RX
     rfm69_spi_write(REG_AFCFEI, MY_AFCFEI);
 
-    // Set G0 IRQ to Packet Sent
-    rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PACKETSENT);
+    // Set G0 IRQ to payload ready (received message)
+    rfm69_spi_write(REG_DIOMAPPING1, MY_DIOMAPPING1_PAYLOADREADY);
     rfm69_spi_write(REG_DIOMAPPING2, MY_DIOMAPPING2);
 
     // Set RX minimum signal strength detection to -114dBm

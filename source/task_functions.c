@@ -13,6 +13,7 @@
 #include "helper_functions.h"
 #include "radio_functions.h"
 #include "display_functions.h"
+#include "peripheral_setup.h"
 
 
 
@@ -149,12 +150,56 @@ void mechanum_driver(void) {
     bl *= magnitude;
     br *= magnitude;
     
+    uint8_t motor_scaling; // max revs
+    motor_scaling = 2; 
+
+    if(!gpio_get(DIP1)){
+        motor_scaling = 6;
+    }
+    if(!gpio_get(DIP2)){
+        motor_scaling = 10;
+    }
+    if(!gpio_get(DIP3)){
+        motor_scaling = 20;
+    }
+
+    /*
+    static uint8_t current_gear = 1;
+    static uint16_t bumpers_prev = 0;
+
+    bool r1_pressed = (ds4_state.buttons & RIGHT_BUMPER_MASK) && !(bumpers_prev & RIGHT_BUMPER_MASK);
+    bool l1_pressed  = (ds4_state.buttons & LEFT_BUMPER_MASK)  && !(bumpers_prev & LEFT_BUMPER_MASK);
+
+    if (r1_pressed && (current_gear < 4)) {
+        current_gear++;
+    }
+    if (l1_pressed && (current_gear > 1)) {
+        current_gear--;
+    }
+
+    bumpers_prev = ds4_state.buttons;
+
+    switch(current_gear){
+        case 1: motor_scaling = 2; 
+                break;
+        case 2: motor_scaling = 5;
+                break;
+        case 3: motor_scaling = 10;
+                break;
+        case 4: motor_scaling = 20;
+                break;
+        default: motor_scaling = 2;
+                break;
+    }
+    
+    
+    */
 
     // Scaling up to the max value, rounding to nearest whole number then casting to an integer
-    int8_t fl_scaled = round_and_cast(fl * MOTOR_SCALING); 
-    int8_t fr_scaled = round_and_cast(fr * MOTOR_SCALING); 
-    int8_t bl_scaled = round_and_cast(bl * MOTOR_SCALING); 
-    int8_t br_scaled = round_and_cast(br * MOTOR_SCALING); 
+    int8_t fl_scaled = round_and_cast(fl * motor_scaling);
+    int8_t fr_scaled = round_and_cast(fr * motor_scaling); 
+    int8_t bl_scaled = round_and_cast(bl * motor_scaling); 
+    int8_t br_scaled = round_and_cast(br * motor_scaling); 
 
     // mecanum_resultant_TEST(fl * MOTOR_SCALING, fr * MOTOR_SCALING, bl * MOTOR_SCALING, br * MOTOR_SCALING);    
 
@@ -182,6 +227,8 @@ void pack_and_send(void){
     int8_t bl = 0; 
     int8_t br = 0;
 
+    static uint16_t buttons_prev;
+
     // Dequeue inputs until queue is empty
     for (uint8_t i = 0; i<10; i++){
         if(queue_is_empty(&TX_q)){
@@ -204,7 +251,7 @@ void pack_and_send(void){
         }
     }
 
-    uint8_t payload[4];
+    uint8_t payload[5];
 
     // Casting to a uint for SPI and radio unit. Need to interpret correctly on receiving end
     payload[0] = (uint8_t)fl; 
@@ -212,9 +259,22 @@ void pack_and_send(void){
     payload[2] = (uint8_t)bl;
     payload[3] = (uint8_t)br;
 
+
+    bool motors_idle = (payload[0] | payload[1] | payload[2] | payload[3]) == 0;
+    bool ps_just_pressed = (ds4_state.buttons & 0x2000) && !(buttons_prev & 0x2000);
+
+    if (motors_idle && ps_just_pressed) { // if all motors are 0 and the PS button was just pressed, send a special packet to indicate velocity mode
+        payload[4] = VELOCITY_MODE;
+    }
+    else{
+        payload[4] = 0x00; 
+    }
+
+    buttons_prev = ds4_state.buttons; // For detecting changes in button state
+
     // Sending payload then switching back to RX
     rfm69_set_standby();
-    rfm69_write_fifo(payload, 4);
+    rfm69_write_fifo(payload, 5);
     rfm69_set_tx();
     wait_for_transmit();
     // maybe add something in here to indicate on the screen that it is transmitting?
@@ -243,7 +303,7 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
     static uint8_t rssi_prev; 
     static uint8_t pkt_loss_prev;
     static uint8_t batt_prev;
-    static bool display_dashes;
+    static bool link_displayed = false;
 
 
 
@@ -257,12 +317,15 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         DS4_conn = false;
     }
 
+    if(link && !link_displayed){
+        SSD1306_send_big_char(20, 110, 6);
+	    SSD1306_send_big_char(21, 118, 6);
+        link_displayed = true;
+    }
+    else if(!link && link_displayed){
+        SSD1306_send_big_char(' ', 110, 6);
+        SSD1306_send_big_char(' ', 118, 6);
 
-
-
-    // If the robot is disconnected, update the screen with dashes if havent already, and get out
-    if (!link && !display_dashes){
-        // Update screen to all dashes, showing robot is disconnected 
         SSD1306_send_big_char('-', 57, 2); // RSSI
         SSD1306_send_big_char('-', 66, 2);
 
@@ -273,19 +336,18 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         SSD1306_send_big_char('-', 59, 6); 
         SSD1306_send_big_char('-', 77, 6); 
 
-        display_dashes = true;
-        return;
+        link_displayed = false;
     }
-    else if(!link){
-        return;
-    }
+
+
+
 
 
     // Dequeue inputs until queue is empty
     for (uint8_t i = 0; i<10; i++){
         // If there is nothing to dequeue, then there is nothing to update. get out
         if(queue_is_empty(&Display_q)){
-            break;
+            return;
         }
 
         queue_try_remove(&Display_q, &data);
@@ -316,8 +378,6 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         SSD1306_send_big_char(rssi_ones, 66, 2);
         // Update previous value
         rssi_prev = rssi_dbm;
-        // Update display dashes variable
-        display_dashes = false;
     }
     
 
@@ -338,8 +398,6 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         }
         // Update previous value
         pkt_loss_prev = pkt_loss;
-        // Update display dashes variable
-        display_dashes = false;
     }
 
 
@@ -354,8 +412,6 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         SSD1306_send_big_char(batt_tenth, 77, 6); 
         // Update previous value
         batt_prev = batt;
-        // Update display dashes variable
-        display_dashes = false;
     }
 }
 

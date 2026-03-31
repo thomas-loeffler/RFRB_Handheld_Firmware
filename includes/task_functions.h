@@ -22,7 +22,7 @@ extern struct bt_hid_state ds4_state;
 //              DEFINES             //
 //////////////////////////////////////
 
-#define MOTOR_SCALING 12
+
 #define ROT_DAMP_FACT 0.5f
 #define DISCONNECT_ERROR 0x04FF
 

@@ -25,6 +25,7 @@ extern queue_t Display_q;
 #define PI 3.1416f
 #define COS_45 0.70710678f
 #define MOTOR_SCALING 12
+#define VELOCITY_MODE 0x07
 
 
 //////////////////////////////////////

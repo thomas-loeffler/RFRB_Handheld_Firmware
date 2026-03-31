@@ -11,6 +11,8 @@
 
 // ========== User defined headers ==========
 #include "peripheral_setup.h"
+#include "radio_functions.h" // For reading radio mode in the IRQ handler
+#include "radio_registers.h" // For register definitions and bit masks used in the IRQ handler
 
 
 
@@ -138,7 +140,11 @@ void radio_irq_setup(void) {
 
 
 void radio_irq_handler(uint gpio, uint32_t events) {
-    radio_event = true; // Set flag to be read in main loop
+    uint8_t mode = rfm69_spi_read(REG_OPMODE);
+    if (mode == MODE_RX) {
+        // Packet received, set flag to read in main loop
+        radio_event = true; // Set flag to be read in main loop
+    }
 }
 
 
