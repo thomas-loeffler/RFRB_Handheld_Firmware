@@ -83,7 +83,7 @@ void main(void){
 
 	bool link = false; // variable describing wether the robot is connected
 
-
+	
 	while (1) {
 
 		// Retreiving current time
