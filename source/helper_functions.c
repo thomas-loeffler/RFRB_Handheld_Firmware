@@ -56,6 +56,27 @@ uint8_t extract_ds4_rx(struct bt_hid_state* ds4_state){
     return ds4_state -> rx;
 }
 
+uint8_t get_gear(struct bt_hid_state* ds4_state){
+    // Init variables for gear system
+    static uint8_t gear = 1; 
+    static uint16_t buttons_prev = 0; // for detecting a positive edge on the bumper buttons
+
+    // Detecting rising edge on the bumper buttons to change gears
+    bool r1_pressed = (ds4_state -> buttons & 0x0002) && !(buttons_prev & 0x0002); 
+    bool l1_pressed  = (ds4_state -> buttons & 0x0001)  && !(buttons_prev & 0x0001);
+
+    if (r1_pressed && (gear < 4)) { // Right bumper increments the gear, up to max of 4
+        gear++;
+    }
+    if (l1_pressed && (gear > 1)) { // Left bumper decrements the gear, down to min of 1
+        gear--;
+    }
+
+    buttons_prev = ds4_state -> buttons; // Update previous button state for next loop
+
+    return gear;
+}
+
 
 
 // Faster rounding than roundf()

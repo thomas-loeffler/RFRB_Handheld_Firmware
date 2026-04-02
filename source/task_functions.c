@@ -14,6 +14,8 @@
 #include "radio_functions.h"
 #include "display_functions.h"
 #include "peripheral_setup.h"
+#include "stdio.h"
+#include "string.h"
 
 
 
@@ -36,7 +38,7 @@ void get_ds4_inputs(void){
     raw_lx = extract_ds4_lx(&ds4_state); // grab the left joytick X value from the struct
     raw_ly = extract_ds4_ly(&ds4_state); // grab the left joytick Y value from the struct
 
-    raw_rx = extract_ds4_rx(&ds4_state); // grab the left joytick Y value from the struct
+    raw_rx = extract_ds4_rx(&ds4_state); // grab the right joytick X value from the struct
 
     // Adding identifiers to the variables so they can be distinguished when dequeueing
     int16_t lx = (int16_t)(raw_lx | 0x0100); 
@@ -66,7 +68,6 @@ void mechanum_driver(void) {
         if(queue_is_empty(&Mechanum_q)){
             break;
         }
-
         queue_try_remove(&Mechanum_q, &data);
 
         if((data & 0xFF00) == 0x0100){ // 1 is the ID for left joystick x
@@ -98,6 +99,30 @@ void mechanum_driver(void) {
 
     // Damping the rotational component so our running back doesnt turn into a helicopter
     norm_t *= ROT_DAMP_FACT;
+
+    uint8_t gear = get_gear(&ds4_state); // Get the current gear, updating on bumper presses
+
+    uint8_t motor_scaling; // the factor in which the motor outputs are sclaed by. Instead of 0->1, 0->motor_scaling
+
+    // Changing the motor scaling value based on the current gear
+    switch(gear){
+        case 1: motor_scaling = 5; 
+                break;
+        case 2: motor_scaling = 10;
+                break;
+        case 3: motor_scaling = 20;
+                break;
+        case 4: motor_scaling = 30;
+                break;
+        default: motor_scaling = 5;
+                break;
+    }
+
+    // Enqueueing the gear varaible for the display function
+    int16_t gear_q = (int16_t)(gear | 0x0400); // Adding identifier so it can be distinguished when dequeueing
+    queue_try_add(&Display_q, &gear_q);
+
+
 
     // Early exit to skip all the calulations if the controller is at rest
     if (norm_x == 0 && norm_y == 0 && norm_t == 0) {
@@ -150,50 +175,6 @@ void mechanum_driver(void) {
     bl *= magnitude;
     br *= magnitude;
     
-    uint8_t motor_scaling; // max revs
-    motor_scaling = 2; 
-
-    if(!gpio_get(DIP1)){
-        motor_scaling = 6;
-    }
-    if(!gpio_get(DIP2)){
-        motor_scaling = 10;
-    }
-    if(!gpio_get(DIP3)){
-        motor_scaling = 20;
-    }
-
-    /*
-    static uint8_t current_gear = 1;
-    static uint16_t bumpers_prev = 0;
-
-    bool r1_pressed = (ds4_state.buttons & RIGHT_BUMPER_MASK) && !(bumpers_prev & RIGHT_BUMPER_MASK);
-    bool l1_pressed  = (ds4_state.buttons & LEFT_BUMPER_MASK)  && !(bumpers_prev & LEFT_BUMPER_MASK);
-
-    if (r1_pressed && (current_gear < 4)) {
-        current_gear++;
-    }
-    if (l1_pressed && (current_gear > 1)) {
-        current_gear--;
-    }
-
-    bumpers_prev = ds4_state.buttons;
-
-    switch(current_gear){
-        case 1: motor_scaling = 2; 
-                break;
-        case 2: motor_scaling = 5;
-                break;
-        case 3: motor_scaling = 10;
-                break;
-        case 4: motor_scaling = 20;
-                break;
-        default: motor_scaling = 2;
-                break;
-    }
-    
-    
-    */
 
     // Scaling up to the max value, rounding to nearest whole number then casting to an integer
     int8_t fl_scaled = round_and_cast(fl * motor_scaling);
@@ -289,7 +270,7 @@ void pack_and_send(void){
 
 
 // Updating the monitored values
-void SSD1306_UI_update(uint8_t pkt_sent, bool link){
+void SSD1306_UI_update1(uint8_t pkt_sent, bool link){
 
     static bool DS4_conn = false; // init to false
 
@@ -297,13 +278,15 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
     uint8_t pkt_rec = 0; // Ack data
     uint8_t rssi = 0; // Ack data
     uint8_t batt = 0; // Ack data
+    static uint8_t gear = 0; // For displaying current gear. Static so it doesnt reinit to 0 every loop, latching the value until a new value comes in
 	
 
     // Variables for storing previous state, preventing unnecessary updates to the display
     static uint8_t rssi_prev; 
     static uint8_t pkt_loss_prev;
     static uint8_t batt_prev;
-    static bool link_displayed = false;
+    static uint8_t gear_prev;
+    static bool link_displayed = true;
 
 
 
@@ -323,7 +306,7 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         link_displayed = true;
     }
     else if(!link && link_displayed){
-        SSD1306_send_big_char(' ', 110, 6);
+        SSD1306_send_big_char(' ', 110, 6); // clear rf symbol
         SSD1306_send_big_char(' ', 118, 6);
 
         SSD1306_send_big_char('-', 57, 2); // RSSI
@@ -347,7 +330,7 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
     for (uint8_t i = 0; i<10; i++){
         // If there is nothing to dequeue, then there is nothing to update. get out
         if(queue_is_empty(&Display_q)){
-            return;
+            break;
         }
 
         queue_try_remove(&Display_q, &data);
@@ -360,6 +343,10 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         }
         else if((data & 0xFF00) == 0x0300){
             batt = (uint8_t)(data & 0x00FF);
+        }
+        else if((data & 0xFF00) == 0x0400){
+            gear = (uint8_t)(data & 0x00FF);
+            
         }
     }
 
@@ -384,7 +371,7 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
     // ------------ Packet Loss ------------
     uint8_t pkt_loss = pkt_sent - pkt_rec;
 
-    if (pkt_loss != pkt_loss_prev){
+    if ((pkt_loss != pkt_loss_prev) && link){
         // Calculations
         uint8_t pkt_loss_tens = (pkt_loss / 10) % 10;
         uint8_t pkt_loss_ones = pkt_loss % 10;
@@ -400,7 +387,7 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         pkt_loss_prev = pkt_loss;
     }
 
-
+    // ------------ Battery ------------
     if (batt != batt_prev){
         // Calculations (battery voltage comes in as a 3 digit number (xyz) scaled up by 10, to represent (xy.z))
         uint8_t batt_tens  = (batt / 100) % 10;
@@ -413,7 +400,174 @@ void SSD1306_UI_update(uint8_t pkt_sent, bool link){
         // Update previous value
         batt_prev = batt;
     }
+
+    // ------------ Gear ------------
+    if (gear != gear_prev){
+        // Update screen
+        SSD1306_send_big_char(gear, 115, 2);
+        // Update previous value
+        gear_prev = gear;
+    }
+
+
 }
+
+
+
+
+
+
+
+
+// Updating the monitored values
+void SSD1306_UI_update2(uint8_t pkt_sent, bool link){
+
+    static bool DS4_conn = false; // init to false
+
+    int16_t data; // For dequeueing
+    uint8_t pkt_rec = 0; // Ack data
+    uint8_t rssi = 0; // Ack data
+    uint8_t batt = 0; // Ack data
+    static uint8_t gear = 0; // For displaying current gear. Static so it doesnt reinit to 0 every loop, latching the value until a new value comes in
+	
+
+    // Variables for storing previous state, preventing unnecessary updates to the display
+    static uint8_t rssi_prev; 
+    static uint8_t pkt_loss_prev;
+    static uint8_t batt_prev;
+    static uint8_t gear_prev;
+    static bool link_displayed = true;
+
+
+
+    // Updating the bluetooth icon that designates if the DS4 is connected
+    if(bt_hid_is_connected() && !DS4_conn){
+        SSD1306_send_big_char('*', 120, 0); // if the DS4 just connected, update display with BT icon
+        DS4_conn = true;
+    }
+    else if (!bt_hid_is_connected() && DS4_conn){
+        SSD1306_send_big_char(' ', 120, 0); // if the DS4 just disconnected, clear BT icon
+        DS4_conn = false;
+    }
+
+    if(link && !link_displayed){
+        SSD1306_send_big_char(20, 110, 6);
+	    SSD1306_send_big_char(21, 118, 6);
+        link_displayed = true;
+    }
+    else if(!link && link_displayed){
+
+        SSD1306_send_small_char('-', 42, 2); // RSSI
+        SSD1306_send_small_char('-', 48, 2);
+
+        SSD1306_send_small_char('-', 48, 3); // Packet Loss
+        SSD1306_send_small_char('-', 54, 3);
+
+        SSD1306_send_small_char('-', 36, 4); // Battery
+        SSD1306_send_small_char('-', 42, 4); 
+        SSD1306_send_small_char('-', 54, 4); 
+
+        link_displayed = false;
+    }
+
+
+
+
+
+    // Dequeue inputs until queue is empty
+    for (uint8_t i = 0; i<10; i++){
+        // If there is nothing to dequeue, then there is nothing to update. get out
+        if(queue_is_empty(&Display_q)){
+            break;
+        }
+
+        queue_try_remove(&Display_q, &data);
+
+        if((data & 0xFF00) == 0x0100){
+            rssi = (uint8_t)(data & 0x00FF);
+        }
+        else if((data & 0xFF00) == 0x0200){
+            pkt_rec = (uint8_t)(data & 0x00FF);
+        }
+        else if((data & 0xFF00) == 0x0300){
+            batt = (uint8_t)(data & 0x00FF);
+        }
+        else if((data & 0xFF00) == 0x0400){
+            gear = (uint8_t)(data & 0x00FF);
+            
+        }
+    }
+
+
+    
+
+
+    // --------------- RSSI ---------------
+    uint8_t rssi_dbm = rssi/2; // RSSI function according to the datasheet
+    if (rssi_dbm != rssi_prev){
+        // Calculations
+        uint8_t rssi_tens = (rssi_dbm / 10) % 10;
+        uint8_t rssi_ones = rssi_dbm % 10;
+        // Update screen 
+        SSD1306_send_small_char(rssi_tens, 42, 2);
+        SSD1306_send_small_char(rssi_ones, 48, 2);
+        // Update previous value
+        rssi_prev = rssi_dbm;
+    }
+    
+
+    // ------------ Packet Loss ------------
+    uint8_t pkt_loss = pkt_sent - pkt_rec;
+
+    if ((pkt_loss != pkt_loss_prev) && link){
+        // Calculations
+        uint8_t pkt_loss_tens = (pkt_loss / 10) % 10;
+        uint8_t pkt_loss_ones = pkt_loss % 10;
+        // Update screen
+        if(pkt_loss_tens == 0){ // if value is only one digit, display it centered without the tens digit
+            SSD1306_send_small_char(pkt_loss_ones, 51, 3);
+        }
+        else{
+            SSD1306_send_small_char(pkt_loss_tens, 48, 3);
+            SSD1306_send_small_char(pkt_loss_ones, 54, 3);
+        }
+        // Update previous value
+        pkt_loss_prev = pkt_loss;
+    }
+
+    // ------------ Battery ------------
+    if (batt != batt_prev){
+        // Calculations (battery voltage comes in as a 3 digit number (xyz) scaled up by 10, to represent (xy.z))
+        uint8_t batt_tens  = (batt / 100) % 10;
+        uint8_t batt_ones  = (batt / 10) % 10;
+        uint8_t batt_tenth = batt % 10;
+        // Update screen
+        SSD1306_send_big_char(batt_tens, 36, 4);
+        SSD1306_send_big_char(batt_ones, 42, 4); 
+        SSD1306_send_big_char(batt_tenth, 54, 4); 
+        // Update previous value
+        batt_prev = batt;
+    }
+
+    // ------------ Gear ------------
+    if (gear != gear_prev){
+        // Update screen
+        SSD1306_send_big_char(gear, 36, 5);
+        // Update previous value
+        gear_prev = gear;
+    }
+
+
+}
+
+
+
+
+
+
+
+
+
 
 
 

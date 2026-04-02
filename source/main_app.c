@@ -66,7 +66,7 @@ void main(void){
 	SSD1306_display_trine_logo(); 
 	sleep_ms(1000);
 	SSD1306_clear();
-	SSD1306_UI_setup();
+	SSD1306_UI_setup2();
 	
 	rfm69_setup();
 	//rfm69_set_G0_packet_sent();
@@ -122,7 +122,8 @@ void main(void){
 			else{ 
 				now = time_us_64();
 				if (now > next_packet_expected) link = false;
-				SSD1306_UI_update(pkt_sent, link);
+				SSD1306_UI_update2(pkt_sent, link);
+				
 			}
 		}
 	}

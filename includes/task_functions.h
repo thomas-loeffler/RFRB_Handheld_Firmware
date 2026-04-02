@@ -37,6 +37,7 @@ void mechanum_driver(void);
 
 void pack_and_send(void);
 
-void SSD1306_UI_update(uint8_t pkt_sent, bool link);
+void SSD1306_UI_update1(uint8_t pkt_sent, bool link);
+void SSD1306_UI_update2(uint8_t pkt_sent, bool link);
 
 void process_ack(void);

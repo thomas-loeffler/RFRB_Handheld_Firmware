@@ -276,8 +276,8 @@ void SSD1306_display_all_fonts(void){
     SSD1306_send_PS_symbol('T', 112, 6);
 }
 
-// User interface for the handheld
-void SSD1306_UI_setup(void){
+// User interface #1 for the handheld
+void SSD1306_UI_setup1(void){
     SSD1306_send_big_char('R', 8, 0);
     SSD1306_send_big_char('U', 17, 0);
     SSD1306_send_big_char('N', 26, 0);
@@ -335,6 +335,80 @@ void SSD1306_UI_setup(void){
     SSD1306_send_big_char(' ', 77, 6); // BATTERY TENTH VALUE AT 77, 6
 
     SSD1306_send_big_char('V', 88, 6); 
+    
+}
+
+
+
+
+// User interface #2 for the handheld
+void SSD1306_UI_setup2(void){
+    SSD1306_send_big_char('R', 8, 0);
+    SSD1306_send_big_char('U', 17, 0);
+    SSD1306_send_big_char('N', 26, 0);
+    SSD1306_send_big_char('N', 35, 0);
+    SSD1306_send_big_char('I', 44, 0);  
+    SSD1306_send_big_char('N', 53, 0);  
+    SSD1306_send_big_char('G', 62, 0);
+    SSD1306_send_big_char(' ', 71, 0);
+    SSD1306_send_big_char('B', 80, 0);  
+    SSD1306_send_big_char('A', 89, 0);  
+    SSD1306_send_big_char('C', 98, 0);  
+    SSD1306_send_big_char('K', 107, 0); 
+    
+    SSD1306_send_small_char('R', 0, 2); 
+    SSD1306_send_small_char('S', 6, 2); 
+    SSD1306_send_small_char('S', 12, 2); 
+    SSD1306_send_small_char('I', 18, 2); 
+    SSD1306_send_small_char(':', 24, 2); 
+
+    SSD1306_send_small_char('-', 36, 2); 
+    SSD1306_send_small_char(' ', 42, 2); // RSSI TENS VALUE AT 42, 2
+    SSD1306_send_small_char(' ', 48, 2); // RSSI ONES VALUE AT 48, 2
+    
+    SSD1306_send_small_char('D', 60, 2); 
+    SSD1306_send_small_char('B', 66, 2); 
+    SSD1306_send_small_char('M', 72, 2); 
+
+
+    SSD1306_send_small_char('P', 0, 3); 
+    SSD1306_send_small_char(' ', 6, 3); 
+    SSD1306_send_small_char('L', 12, 3); 
+    SSD1306_send_small_char('O', 18, 3); 
+    SSD1306_send_small_char('S', 24, 3); 
+    SSD1306_send_small_char('S', 30, 3); 
+    SSD1306_send_small_char(':', 36, 3); 
+    
+    SSD1306_send_small_char(' ', 48, 3); // PKT LOSS TENS VALUE AT 48, 3
+    SSD1306_send_small_char(' ', 54, 3); // PKT LOSS ONES VALUE AT 54, 3
+
+    SSD1306_send_small_char('P', 66, 3); 
+    SSD1306_send_small_char('K', 72, 3); 
+    SSD1306_send_small_char('T', 78, 3);
+    SSD1306_send_small_char('S', 84, 3); 
+    
+
+    SSD1306_send_small_char('B', 0, 4); 
+    SSD1306_send_small_char('A', 6, 4); 
+    SSD1306_send_small_char('T', 12, 4); 
+    SSD1306_send_small_char('T', 18, 4); 
+    SSD1306_send_small_char(':', 24, 4); 
+     
+    SSD1306_send_small_char(' ', 36, 4); // BATTERY TENS VALUE AT 36, 4
+    SSD1306_send_small_char(' ', 42, 4); // BATTERY ONES VALUE AT 42, 4
+    SSD1306_send_small_char('.', 48, 4); 
+    SSD1306_send_small_char(' ', 54, 4); // BATTERY TENTH VALUE AT 54, 4
+
+    SSD1306_send_small_char('V', 63, 4);
+
+    SSD1306_send_small_char('G', 0, 5); 
+    SSD1306_send_small_char('E', 6, 5); 
+    SSD1306_send_small_char('A', 12, 5); 
+    SSD1306_send_small_char('R', 18, 5); 
+    SSD1306_send_small_char(':', 24, 5);
+
+    SSD1306_send_small_char(' ', 36, 5); // GEAR AT 36, 5
+
     
 }
 

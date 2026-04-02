@@ -30,7 +30,8 @@ void SSD1306_send_PS_symbol(int character, uint8_t col, uint8_t page);
 
 void SSD1306_display_all_fonts(void);
 
-void SSD1306_UI_setup(void);
+void SSD1306_UI_setup1(void);
+void SSD1306_UI_setup2(void);
 
 
 
