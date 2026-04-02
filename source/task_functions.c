@@ -270,7 +270,7 @@ void pack_and_send(void){
 
 
 // Updating the monitored values
-void SSD1306_UI_update1(uint8_t pkt_sent, bool link){
+void SSD1306_UI_update1(uint8_t pkt_sent, bool transmit, bool link){
 
     static bool DS4_conn = false; // init to false
 
@@ -420,7 +420,7 @@ void SSD1306_UI_update1(uint8_t pkt_sent, bool link){
 
 
 // Updating the monitored values
-void SSD1306_UI_update2(uint8_t pkt_sent, bool link){
+void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
 
     static bool DS4_conn = false; // init to false
 
@@ -437,6 +437,7 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool link){
     static uint8_t batt_prev;
     static uint8_t gear_prev;
     static bool link_displayed = true;
+    static bool transmit_displayed = true;
 
 
 
@@ -450,12 +451,28 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool link){
         DS4_conn = false;
     }
 
+
+     if(transmit && !transmit_displayed){
+        SSD1306_send_big_char(22, 90, 6); // display controller rf symbol
+        SSD1306_send_big_char(23, 98, 6);
+        transmit_displayed = true;
+    }
+    else if (!transmit && transmit_displayed){
+        SSD1306_send_big_char(' ', 90, 6); // clear controller rf symbol
+        SSD1306_send_big_char(' ', 98, 6);
+        transmit_displayed = false;
+    }
+
+
     if(link && !link_displayed){
-        SSD1306_send_big_char(20, 110, 6);
-	    SSD1306_send_big_char(21, 118, 6);
+        SSD1306_send_big_char(24, 110, 6); // display robot rf symbol
+	    SSD1306_send_big_char(25, 118, 6);
         link_displayed = true;
     }
-    else if(!link && link_displayed){
+    else if(!link && link_displayed){ // if there is no more link, clear the values
+
+        SSD1306_send_big_char(' ', 110, 6); // clear robot rf symbol
+	    SSD1306_send_big_char(' ', 118, 6);
 
         SSD1306_send_small_char('-', 42, 2); // RSSI
         SSD1306_send_small_char('-', 48, 2);
@@ -469,6 +486,7 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool link){
 
         link_displayed = false;
     }
+
 
 
 

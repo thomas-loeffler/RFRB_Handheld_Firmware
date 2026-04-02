@@ -82,6 +82,8 @@ void main(void){
 	uint64_t now = time_us_64();
 
 	bool link = false; // variable describing wether the robot is connected
+	bool transmit = false;
+	bool DS4_conn = false;
 
 	
 	while (1) {
@@ -96,8 +98,10 @@ void main(void){
 
 			//stdio_send_ds4_outputs(&ds4_state); // For debugging, send the DS4 inputs to USB serial
 
-			// If the DS4 is connected, transmit. Else, do nothing
-			if(bt_hid_is_connected()){
+			// If the DS4 is connected and DIP1 = high, transmit. Else, do nothing
+			transmit = gpio_get(DIP1);
+			DS4_conn = bt_hid_is_connected();
+			if(DS4_conn && transmit){
 
 				get_ds4_inputs();
 				mechanum_driver();
@@ -122,7 +126,7 @@ void main(void){
 			else{ 
 				now = time_us_64();
 				if (now > next_packet_expected) link = false;
-				SSD1306_UI_update2(pkt_sent, link);
+				SSD1306_UI_update2(pkt_sent, transmit, link);
 				
 			}
 		}
