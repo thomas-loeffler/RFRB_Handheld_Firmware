@@ -83,8 +83,6 @@ void main(void){
 
 	bool link = false; // variable describing wether the robot is connected
 	bool transmit = false;
-	bool DS4_conn = false;
-
 	
 	while (1) {
 
@@ -99,9 +97,8 @@ void main(void){
 			//stdio_send_ds4_outputs(&ds4_state); // For debugging, send the DS4 inputs to USB serial
 
 			// If the DS4 is connected and DIP1 = high, transmit. Else, do nothing
-			transmit = gpio_get(DIP1);
-			DS4_conn = bt_hid_is_connected();
-			if(DS4_conn && transmit){
+			transmit = !gpio_get(DIP1) && bt_hid_is_connected(); // active low
+			if(transmit){
 
 				get_ds4_inputs();
 				mechanum_driver();
@@ -114,6 +111,8 @@ void main(void){
 		// If its not time to send a transmission wait for ack from robot and display data
 		else{
 			if(radio_event){ 
+				SSD1306_send_big_char(24, 110, 6); // display robot rf symbol
+	    		SSD1306_send_big_char(25, 118, 6);
 
 				now = time_us_64();
 				next_packet_expected = now + 1500*1000; // 1500 ms in microseconds = 3 missed packets

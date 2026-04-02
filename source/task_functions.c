@@ -90,7 +90,7 @@ void mechanum_driver(void) {
 	// Normalising raw inputs (0 - 255) to (-1 - 1)
     float norm_x = ((float)raw_lx - 127.5f) / 127.5f;
     float norm_y = -1 * (((float)raw_ly - 127.5f) / 127.5f); // Flip sign so up is positive
-    float norm_t = ((float)raw_rx - 127.5f) / 127.5f; // T for turn
+    float norm_t = -1 * ((float)raw_rx - 127.5f) / 127.5f; // T for turn
 
     // Applying deadzone
     if (fabs(norm_x) < 0.1f) norm_x = 0;
@@ -118,9 +118,9 @@ void mechanum_driver(void) {
                 break;
     }
 
-    // Enqueueing the gear varaible for the display function
-    int16_t gear_q = (int16_t)(gear | 0x0400); // Adding identifier so it can be distinguished when dequeueing
-    queue_try_add(&Display_q, &gear_q);
+    // Enqueueing the motor scaling varaible for the display function
+    int16_t ms_q = (int16_t)(motor_scaling | 0x0400); // Adding identifier so it can be distinguished when dequeueing
+    queue_try_add(&Display_q, &ms_q);
 
 
 
@@ -196,6 +196,10 @@ void mechanum_driver(void) {
     queue_try_add(&TX_q, &bl_q);
     queue_try_add(&TX_q, &br_q);
 }
+
+
+
+
 
 
 
@@ -428,26 +432,26 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
     uint8_t pkt_rec = 0; // Ack data
     uint8_t rssi = 0; // Ack data
     uint8_t batt = 0; // Ack data
-    static uint8_t gear = 0; // For displaying current gear. Static so it doesnt reinit to 0 every loop, latching the value until a new value comes in
+    static uint8_t gear = 1; // For displaying current gear. Static so it doesnt reinit to 0 every loop, latching the value until a new value comes in
 	
 
     // Variables for storing previous state, preventing unnecessary updates to the display
     static uint8_t rssi_prev; 
     static uint8_t pkt_loss_prev;
     static uint8_t batt_prev;
-    static uint8_t gear_prev;
+    static uint8_t gear_prev = 1;
     static bool link_displayed = true;
-    static bool transmit_displayed = true;
+    static bool transmit_displayed = false;
 
 
 
     // Updating the bluetooth icon that designates if the DS4 is connected
     if(bt_hid_is_connected() && !DS4_conn){
-        SSD1306_send_big_char('*', 120, 0); // if the DS4 just connected, update display with BT icon
+        SSD1306_send_big_char('*', 105, 3); // if the DS4 just connected, update display with BT icon
         DS4_conn = true;
     }
     else if (!bt_hid_is_connected() && DS4_conn){
-        SSD1306_send_big_char(' ', 120, 0); // if the DS4 just disconnected, clear BT icon
+        SSD1306_send_big_char(' ', 105, 3); // if the DS4 just disconnected, clear BT icon
         DS4_conn = false;
     }
 
@@ -455,11 +459,16 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
      if(transmit && !transmit_displayed){
         SSD1306_send_big_char(22, 90, 6); // display controller rf symbol
         SSD1306_send_big_char(23, 98, 6);
+
+        SSD1306_send_big_char(gear, 50, 6); 
         transmit_displayed = true;
     }
     else if (!transmit && transmit_displayed){
         SSD1306_send_big_char(' ', 90, 6); // clear controller rf symbol
         SSD1306_send_big_char(' ', 98, 6);
+
+        SSD1306_send_big_char('-', 50, 6); // clear gear value
+
         transmit_displayed = false;
     }
 
@@ -474,15 +483,17 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         SSD1306_send_big_char(' ', 110, 6); // clear robot rf symbol
 	    SSD1306_send_big_char(' ', 118, 6);
 
-        SSD1306_send_small_char('-', 42, 2); // RSSI
-        SSD1306_send_small_char('-', 48, 2);
+        SSD1306_send_small_char('-', 42, 3); // RSSI
+        SSD1306_send_small_char('-', 48, 3);
 
-        SSD1306_send_small_char('-', 48, 3); // Packet Loss
-        SSD1306_send_small_char('-', 54, 3);
+        SSD1306_send_small_char('-', 48, 4); // Packet Loss
+        SSD1306_send_small_char('-', 54, 4);
 
-        SSD1306_send_small_char('-', 36, 4); // Battery
-        SSD1306_send_small_char('-', 42, 4); 
-        SSD1306_send_small_char('-', 54, 4); 
+        SSD1306_send_small_char('-', 36, 5); // Battery
+        SSD1306_send_small_char('-', 42, 5); 
+        SSD1306_send_small_char('-', 54, 5); 
+
+        SSD1306_send_big_char('-', 50, 6); // Gear
 
         link_displayed = false;
     }
@@ -527,8 +538,8 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         uint8_t rssi_tens = (rssi_dbm / 10) % 10;
         uint8_t rssi_ones = rssi_dbm % 10;
         // Update screen 
-        SSD1306_send_small_char(rssi_tens, 42, 2);
-        SSD1306_send_small_char(rssi_ones, 48, 2);
+        SSD1306_send_small_char(rssi_tens, 42, 3);
+        SSD1306_send_small_char(rssi_ones, 48, 3);
         // Update previous value
         rssi_prev = rssi_dbm;
     }
@@ -539,15 +550,18 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
 
     if ((pkt_loss != pkt_loss_prev) && link){
         // Calculations
-        uint8_t pkt_loss_tens = (pkt_loss / 10) % 10;
+        uint8_t pkt_loss_tens = pkt_loss / 10;
         uint8_t pkt_loss_ones = pkt_loss % 10;
         // Update screen
         if(pkt_loss_tens == 0){ // if value is only one digit, display it centered without the tens digit
-            SSD1306_send_small_char(pkt_loss_ones, 51, 3);
+            SSD1306_send_small_char(' ', 48, 4);
+            SSD1306_send_small_char(' ', 54, 4);
+            SSD1306_send_small_char(pkt_loss_ones, 51, 4);
         }
         else{
-            SSD1306_send_small_char(pkt_loss_tens, 48, 3);
-            SSD1306_send_small_char(pkt_loss_ones, 54, 3);
+            SSD1306_send_small_char(' ', 51, 4);
+            SSD1306_send_small_char(pkt_loss_tens, 48, 4);
+            SSD1306_send_small_char(pkt_loss_ones, 54, 4);
         }
         // Update previous value
         pkt_loss_prev = pkt_loss;
@@ -560,21 +574,33 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         uint8_t batt_ones  = (batt / 10) % 10;
         uint8_t batt_tenth = batt % 10;
         // Update screen
-        SSD1306_send_big_char(batt_tens, 36, 4);
-        SSD1306_send_big_char(batt_ones, 42, 4); 
-        SSD1306_send_big_char(batt_tenth, 54, 4); 
+        SSD1306_send_big_char(batt_tens, 36, 5);
+        SSD1306_send_big_char(batt_ones, 42, 5); 
+        SSD1306_send_big_char(batt_tenth, 54, 5); 
         // Update previous value
         batt_prev = batt;
     }
 
     // ------------ Gear ------------
     if (gear != gear_prev){
+
+        uint8_t gear_tens = gear / 10;
+        uint8_t gear_ones = gear % 10;
         // Update screen
-        SSD1306_send_big_char(gear, 36, 5);
+        if(gear_tens == 0){ // if value is only one digit, display it centered without the tens digit
+            SSD1306_send_big_char(' ', 46, 6); // 46 81
+            SSD1306_send_big_char(' ', 54, 6); // 54 90
+            SSD1306_send_big_char(gear_ones, 50, 6); // 50 85
+        }
+        else{
+            SSD1306_send_big_char(' ', 50, 6); // 50 85
+            SSD1306_send_big_char(gear_tens, 46, 6); // 46 81
+            SSD1306_send_big_char(gear_ones, 54, 6); // 54 90
+        }
+        
         // Update previous value
         gear_prev = gear;
     }
-
 
 }
 

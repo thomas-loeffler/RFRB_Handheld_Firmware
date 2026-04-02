@@ -77,7 +77,7 @@ void rfm69_setup(void) {
     // Set to standby mode (if not already) to allow writing to registers
     rfm69_spi_write(REG_OPMODE, MODE_STANDBY); 
 
-    // Packet mode, FSK (frequency shift keying) (modulation type), no moduation shaping
+    // Packet mode, FSK (frequency shift keying)(modulation type), no moduation shaping
     rfm69_spi_write(REG_DATAMODUL, MY_DATAMODUL); 
 
     // 100kbps bitrate
