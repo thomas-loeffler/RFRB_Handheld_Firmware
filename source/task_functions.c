@@ -272,7 +272,7 @@ void pack_and_send(void){
 
 
 
-
+/*
 // Updating the monitored values
 void SSD1306_UI_update1(uint8_t pkt_sent, bool transmit, bool link){
 
@@ -415,7 +415,7 @@ void SSD1306_UI_update1(uint8_t pkt_sent, bool transmit, bool link){
 
 
 }
-
+*/
 
 
 
@@ -424,14 +424,16 @@ void SSD1306_UI_update1(uint8_t pkt_sent, bool transmit, bool link){
 
 
 // Updating the monitored values
-void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
+void SSD1306_UI_update2(bool transmit, bool link){
 
     static bool DS4_conn = false; // init to false
 
     int16_t data; // For dequeueing
-    uint8_t pkt_rec = 0; // Ack data
-    uint8_t rssi = 0; // Ack data
-    uint8_t batt = 0; // Ack data
+    static uint8_t pkt_rec = 0; // Ack data
+    static uint8_t pkt_sent = 0; // Ack data
+    static uint8_t pkt_loss = 0;
+    static uint8_t rssi = 0; // Ack data
+    static uint8_t batt = 0; // Ack data
     static uint8_t gear = 1; // For displaying current gear. Static so it doesnt reinit to 0 every loop, latching the value until a new value comes in
 	
 
@@ -483,6 +485,7 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         SSD1306_send_big_char(' ', 110, 6); // clear robot rf symbol
 	    SSD1306_send_big_char(' ', 118, 6);
 
+        /*
         SSD1306_send_small_char('-', 42, 3); // RSSI
         SSD1306_send_small_char('-', 48, 3);
 
@@ -492,8 +495,7 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         SSD1306_send_small_char('-', 36, 5); // Battery
         SSD1306_send_small_char('-', 42, 5); 
         SSD1306_send_small_char('-', 54, 5); 
-
-        SSD1306_send_big_char('-', 50, 6); // Gear
+        */
 
         link_displayed = false;
     }
@@ -523,8 +525,11 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         }
         else if((data & 0xFF00) == 0x0400){
             gear = (uint8_t)(data & 0x00FF);
-            
         }
+        else if((data & 0xFF00) == 0x0500){
+            pkt_sent = (uint8_t)(data & 0x00FF);
+        }
+
     }
 
 
@@ -532,8 +537,9 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
 
 
     // --------------- RSSI ---------------
-    uint8_t rssi_dbm = rssi/2; // RSSI function according to the datasheet
-    if (rssi_dbm != rssi_prev){
+    
+    if (rssi != rssi_prev){
+        uint8_t rssi_dbm = rssi/2; // RSSI function according to the datasheet
         // Calculations
         uint8_t rssi_tens = (rssi_dbm / 10) % 10;
         uint8_t rssi_ones = rssi_dbm % 10;
@@ -541,13 +547,12 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         SSD1306_send_small_char(rssi_tens, 42, 3);
         SSD1306_send_small_char(rssi_ones, 48, 3);
         // Update previous value
-        rssi_prev = rssi_dbm;
+        rssi_prev = rssi;
     }
     
 
     // ------------ Packet Loss ------------
-    uint8_t pkt_loss = pkt_sent - pkt_rec;
-
+    pkt_loss = pkt_sent - pkt_rec;
     if ((pkt_loss != pkt_loss_prev) && link){
         // Calculations
         uint8_t pkt_loss_tens = pkt_loss / 10;
@@ -574,9 +579,9 @@ void SSD1306_UI_update2(uint8_t pkt_sent, bool transmit, bool link){
         uint8_t batt_ones  = (batt / 10) % 10;
         uint8_t batt_tenth = batt % 10;
         // Update screen
-        SSD1306_send_big_char(batt_tens, 36, 5);
-        SSD1306_send_big_char(batt_ones, 42, 5); 
-        SSD1306_send_big_char(batt_tenth, 54, 5); 
+        SSD1306_send_small_char(batt_tens, 36, 5);
+        SSD1306_send_small_char(batt_ones, 42, 5); 
+        SSD1306_send_small_char(batt_tenth, 54, 5); 
         // Update previous value
         batt_prev = batt;
     }
@@ -620,7 +625,7 @@ void process_ack(void){
 
 
     // Buffer for receiving ack messages from the robot
-	uint8_t ack_buffer[4] = {0,0,0,0};
+	uint8_t ack_buffer[20] = {0,0,0,0};
 
     // Reading the message and filling our buffer
     rfm69_read_packet(ack_buffer);

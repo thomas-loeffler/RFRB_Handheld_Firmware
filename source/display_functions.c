@@ -401,14 +401,15 @@ void SSD1306_UI_setup2(void){
 
     SSD1306_send_small_char('V', 63, 5);
 
+    /*
     SSD1306_send_big_char('G', 0, 6); 
     SSD1306_send_big_char('E', 9, 6); 
     SSD1306_send_big_char('A', 18, 6); 
     SSD1306_send_big_char('R', 27, 6); 
     SSD1306_send_big_char(':', 36, 6);
     SSD1306_send_small_char(' ', 50, 6); // GEAR AT 50, 6
-
-    /*
+    */
+    
     SSD1306_send_small_char('M', 0, 6); 
     SSD1306_send_small_char('A', 6, 6); 
     SSD1306_send_small_char('X', 12, 6); 
@@ -419,7 +420,7 @@ void SSD1306_UI_setup2(void){
     SSD1306_send_small_char('S', 18, 7); 
     SSD1306_send_big_char(':', 24, 6); 
     SSD1306_send_small_char(' ', 38, 6); // GEAR AT 38, 6
-    */
+    
 
     
 

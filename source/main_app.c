@@ -108,16 +108,17 @@ void main(void){
 			}
 		}
 
+
 		// If its not time to send a transmission wait for ack from robot and display data
 		else{
 			if(radio_event){ 
-				SSD1306_send_big_char(24, 110, 6); // display robot rf symbol
-	    		SSD1306_send_big_char(25, 118, 6);
+				process_ack();
 
 				now = time_us_64();
 				next_packet_expected = now + 1500*1000; // 1500 ms in microseconds = 3 missed packets
-
-				process_ack();
+				SSD1306_UI_update2(transmit, link);
+				int16_t pkt_sent_q = (int16_t)(pkt_sent_q | 0x0500); // Adding identifier so it can be distinguished when dequeueing
+    			queue_try_add(&Display_q, &pkt_sent_q);
 				pkt_sent = 0;
 				link = true; // if we got an ack, then we know the robot is connected
 				radio_event = false; // reset the radio event variable for the next packet
@@ -125,8 +126,7 @@ void main(void){
 			else{ 
 				now = time_us_64();
 				if (now > next_packet_expected) link = false;
-				SSD1306_UI_update2(pkt_sent, transmit, link);
-				
+				SSD1306_UI_update2(transmit, link);
 			}
 		}
 	}
