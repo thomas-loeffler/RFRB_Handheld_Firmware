@@ -20,6 +20,8 @@
 #include "radio_registers.h" // RFM69 register and redister init defines
 #include "task_functions.h" // Code for all the task functions
 #include "helper_functions.h" // Smaller random functions that don't fit anywhere and deserve their own file
+#include "stdio.h"
+#include "string.h"
 
 
 //////////////////////////////////////
@@ -131,3 +133,6 @@ void main(void){
 		}
 	}
 }
+
+
+

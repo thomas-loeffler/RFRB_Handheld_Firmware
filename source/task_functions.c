@@ -106,15 +106,17 @@ void mechanum_driver(void) {
 
     // Changing the motor scaling value based on the current gear
     switch(gear){
-        case 1: motor_scaling = 5; 
+        case 1: motor_scaling = 2; 
                 break;
-        case 2: motor_scaling = 10;
+        case 2: motor_scaling = 5;
                 break;
-        case 3: motor_scaling = 20;
+        case 3: motor_scaling = 10;
                 break;
-        case 4: motor_scaling = 30;
+        case 4: motor_scaling = 20;
                 break;
-        default: motor_scaling = 5;
+        case 5: motor_scaling = 30;
+                break;
+        default: motor_scaling = 2;
                 break;
     }
 
@@ -462,14 +464,15 @@ void SSD1306_UI_update2(bool transmit, bool link){
         SSD1306_send_big_char(22, 90, 6); // display controller rf symbol
         SSD1306_send_big_char(23, 98, 6);
 
-        SSD1306_send_big_char(gear, 50, 6); 
+        SSD1306_send_big_char(gear, 44, 6); 
         transmit_displayed = true;
     }
     else if (!transmit && transmit_displayed){
         SSD1306_send_big_char(' ', 90, 6); // clear controller rf symbol
         SSD1306_send_big_char(' ', 98, 6);
 
-        SSD1306_send_big_char('-', 50, 6); // clear gear value
+        SSD1306_send_big_char(' ', 40, 6); // clear gear value
+        SSD1306_send_big_char(' ', 48, 6); 
 
         transmit_displayed = false;
     }
@@ -593,14 +596,14 @@ void SSD1306_UI_update2(bool transmit, bool link){
         uint8_t gear_ones = gear % 10;
         // Update screen
         if(gear_tens == 0){ // if value is only one digit, display it centered without the tens digit
-            SSD1306_send_big_char(' ', 46, 6); // 46 81
-            SSD1306_send_big_char(' ', 54, 6); // 54 90
-            SSD1306_send_big_char(gear_ones, 50, 6); // 50 85
+            SSD1306_send_big_char(' ', 40, 6); // 46 81
+            SSD1306_send_big_char(' ', 48, 6); // 54 90
+            SSD1306_send_big_char(gear_ones, 44, 6); // 50 85
         }
         else{
-            SSD1306_send_big_char(' ', 50, 6); // 50 85
-            SSD1306_send_big_char(gear_tens, 46, 6); // 46 81
-            SSD1306_send_big_char(gear_ones, 54, 6); // 54 90
+            SSD1306_send_big_char(' ', 44, 6); // 50 85
+            SSD1306_send_big_char(gear_tens, 40, 6); // 46 81
+            SSD1306_send_big_char(gear_ones, 48, 6); // 54 90
         }
         
         // Update previous value
