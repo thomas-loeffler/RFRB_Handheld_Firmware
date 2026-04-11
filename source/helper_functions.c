@@ -65,7 +65,7 @@ uint8_t get_gear(struct bt_hid_state* ds4_state){
     bool r1_pressed = (ds4_state -> buttons & 0x0002) && !(buttons_prev & 0x0002); 
     bool l1_pressed  = (ds4_state -> buttons & 0x0001)  && !(buttons_prev & 0x0001);
 
-    if (r1_pressed && (gear < 5)) { // Right bumper increments the gear, up to max of 4
+    if (r1_pressed && (gear < 10)) { // Right bumper increments the gear, up to max of 4
         gear++;
     }
     if (l1_pressed && (gear > 1)) { // Left bumper decrements the gear, down to min of 1

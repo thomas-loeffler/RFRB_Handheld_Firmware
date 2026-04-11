@@ -70,6 +70,7 @@ void main(void){
 	SSD1306_clear();
 	SSD1306_UI_setup2();
 	
+	rfm69_reset();
 	rfm69_setup();
 	//rfm69_set_G0_packet_sent();
 
@@ -94,7 +95,7 @@ void main(void){
 		// If the current time is at or after next_rx_time, then initiate a transmission
     	if (now >= next_tx_time) { 
 			// Schedule next transmit EXACTLY 10ms later
-			next_tx_time = now + 10000; // 10 ms in microseconds
+			next_tx_time = now + 50000; // 50 ms in microseconds
 
 			//stdio_send_ds4_outputs(&ds4_state); // For debugging, send the DS4 inputs to USB serial
 
@@ -127,12 +128,98 @@ void main(void){
 			}
 			else{ 
 				now = time_us_64();
-				if (now > next_packet_expected) link = false;
+				if (now > next_packet_expected){
+					link = false;
+					// rfm69_reset();
+					// rfm69_setup();
+					// rfm69_set_rx();
+					next_packet_expected = now + 2*1000*1000;
+				}
 				SSD1306_UI_update2(transmit, link);
 			}
 		}
 	}
 }
 
+
+
+/*
+void main(void){
+
+	// Initializes all configured standard I/O interfaces (USB serial in our case)
+	stdio_init_all();
+
+	// Launch the second core to run the Bluetooth HID code
+	// This will populate the controller state struct with the latest data from the DualShock4
+	multicore_launch_core1(bt_main); 
+
+	// Wait for init
+	sleep_ms(1000);
+
+
+	GPIO_setup(); // Setup the GPIO pins for the DIP switches and the simple cycle pin
+	i2c_setup(); // Setup the I2C peripheral for the display
+	spi_setup(); // Setup the SPI peripheral for the RFM69 radio
+	radio_irq_setup(); // Setup the ISR that runs on the RFM69 IRQ
+
+	
+	// I2C Screen setup
+	SSD1306_init(); // Initialize the I2C screen with predefined commands
+	SSD1306_clear();
+	SSD1306_display_trine_logo(); 
+	sleep_ms(1000);
+	SSD1306_clear();
+	SSD1306_UI_setup2();
+	
+	rfm69_setup();
+	//rfm69_set_G0_packet_sent();
+
+	init_all_queues();
+
+	// Variables for holding received indicators from the robot
+	uint8_t pkt_sent = 0;
+	
+	// Varaibles for 10ms loop timing
+	uint64_t next_tx_time = time_us_64();
+	uint64_t next_packet_expected = time_us_64();
+	uint64_t now = time_us_64();
+
+	bool link = false; // variable describing wether the robot is connected
+	bool transmit = false;
+
+	rfm69_set_rx();
+	
+	while (1) {
+
+		transmit = !gpio_get(DIP1);
+		while (!transmit){
+			transmit = !gpio_get(DIP1);
+			printf("waiting to transmit... \n");
+			sleep_ms(100);
+		}
+
+		if (transmit){
+			while(!radio_event){ // wait until the radio is ready to transmit, which is signaled by the IRQ when it receives a packet (which will be the ack from the robot for the previous packet)
+				get_ds4_inputs();
+				mechanum_driver();
+				pack_and_send();
+				printf("Sent packet");
+				sleep_ms(50); // wait 50 ms between packets
+			}
+		}
+			
+
+		if(radio_event){ 
+			process_ack();
+			link = true;
+			printf("Ack received!! \n\n\n\n\n\n\n");
+			SSD1306_UI_update2(transmit, link);
+			radio_event = false; // reset the radio event variable for the next packet
+		}
+
+		
+	}
+}
+*/
 
 

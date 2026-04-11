@@ -108,13 +108,23 @@ void mechanum_driver(void) {
     switch(gear){
         case 1: motor_scaling = 2; 
                 break;
-        case 2: motor_scaling = 5;
+        case 2: motor_scaling = 3;
                 break;
-        case 3: motor_scaling = 10;
+        case 3: motor_scaling = 4;
                 break;
-        case 4: motor_scaling = 20;
+        case 4: motor_scaling = 5;
                 break;
-        case 5: motor_scaling = 30;
+        case 5: motor_scaling = 6;
+                break;
+        case 6: motor_scaling = 8;
+                break;
+        case 7: motor_scaling = 10;
+                break;
+        case 8: motor_scaling = 20;
+                break;
+        case 9: motor_scaling = 30;
+                break;
+        case 10: motor_scaling = 40;
                 break;
         default: motor_scaling = 2;
                 break;
