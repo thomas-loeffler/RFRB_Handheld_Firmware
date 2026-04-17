@@ -95,7 +95,7 @@ void main(void){
 		// If the current time is at or after next_rx_time, then initiate a transmission
     	if (now >= next_tx_time) { 
 			// Schedule next transmit EXACTLY 10ms later
-			next_tx_time = now + 50000; // 50 ms in microseconds
+			next_tx_time = now + 10000; // 50 ms in microseconds
 
 			//stdio_send_ds4_outputs(&ds4_state); // For debugging, send the DS4 inputs to USB serial
 
@@ -120,7 +120,7 @@ void main(void){
 				now = time_us_64();
 				next_packet_expected = now + 1500*1000; // 1500 ms in microseconds = 3 missed packets
 				SSD1306_UI_update2(transmit, link);
-				int16_t pkt_sent_q = (int16_t)(pkt_sent_q | 0x0500); // Adding identifier so it can be distinguished when dequeueing
+				int16_t pkt_sent_q = (int16_t)(pkt_sent | 0x0500); // Adding identifier so it can be distinguished when dequeueing
     			queue_try_add(&Display_q, &pkt_sent_q);
 				pkt_sent = 0;
 				link = true; // if we got an ack, then we know the robot is connected
