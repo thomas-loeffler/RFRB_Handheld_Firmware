@@ -79,7 +79,7 @@ void SSD1306_clear(void) {
 
 
 
-void SSD1306_init(void){
+void SSD1306_setup(void){
     
     SSD1306_send_command(0xAE); // Display OFF
 

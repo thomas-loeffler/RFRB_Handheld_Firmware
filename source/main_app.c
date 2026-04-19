@@ -63,7 +63,7 @@ void main(void){
 
 	
 	// I2C Screen setup
-	SSD1306_init(); // Initialize the I2C screen with predefined commands
+	SSD1306_setup(); // Initialize the I2C screen with predefined commands
 	SSD1306_clear();
 	SSD1306_display_trine_logo(); 
 	sleep_ms(1000);

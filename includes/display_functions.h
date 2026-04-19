@@ -19,7 +19,7 @@ void SSD1306_set_page_addr(uint8_t start, uint8_t end);
 
 void SSD1306_clear(void);
 
-void SSD1306_init(void);
+void SSD1306_setup(void);
 
 void SSD1306_display_trine_logo(void);
 
